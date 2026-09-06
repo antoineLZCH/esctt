@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  # Release Please uses the Issues API to label and update its release PR.
   issues: write
   pull-requests: write
 

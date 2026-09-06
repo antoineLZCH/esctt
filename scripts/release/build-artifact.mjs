@@ -9,7 +9,22 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const semverPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
-const forbiddenPathPattern = /(^|\/)(?:\.git|\.env(?:\.|$)|node_modules|uploads|media|backups|database|test-results|tests|prototype)(?:\/|$)/;
+const forbiddenPathPattern = /(^|\/)(?:\.git|\.env(?:\.|$)|\.cache|node_modules|uploads|media|backups|database|test-results|tests|prototype)(?:\/|$)/i;
+const forbiddenSecretPattern = /(^|\/)(?:\.npmrc|auth\.json|credentials(?:\.[^/]*)?|secrets?(?:\.[^/]*)?|id_(?:rsa|dsa|ecdsa|ed25519)|[^/]+\.(?:pem|key|p12|pfx|jks))(?:$|\/)/i;
+const generatedCachePattern = /(^|\/)(?:storage\/framework\/cache|cache\/(?:data|views|pages))(?:\/|$)/i;
+const cacheSegmentPattern = /(^|\/)cache(?:\/|$)/i;
+const runtimeCachePrefixes = ['illuminate/cache', 'vendor/illuminate/cache'];
+
+function isGeneratedCachePath(path) {
+  if (generatedCachePattern.test(path)) {
+    return true;
+  }
+  return cacheSegmentPattern.test(path) && !runtimeCachePrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+function isForbiddenPath(path) {
+  return forbiddenPathPattern.test(path) || forbiddenSecretPattern.test(path);
+}
 
 function option(args, name, fallback) {
   const prefix = `${name}=`;
@@ -69,6 +84,24 @@ function filesIn(root) {
   return files.sort();
 }
 
+function nonDirectoryEntriesIn(root) {
+  const entries = [];
+
+  function visit(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(path);
+      } else {
+        entries.push(relativePath(root, path));
+      }
+    }
+  }
+
+  visit(root);
+  return entries.sort();
+}
+
 function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
@@ -77,6 +110,9 @@ function runtimeFilter(sourceRoot, sourcePath) {
   const path = relativePath(sourceRoot, sourcePath);
   if (!path) {
     return true;
+  }
+  if (isForbiddenPath(path)) {
+    return false;
   }
   const segments = path.split('/');
   const name = segments.at(-1);
@@ -129,6 +165,9 @@ function vendorFilter(sourceRoot, sourcePath) {
   const path = relativePath(sourceRoot, sourcePath);
   if (!path) {
     return true;
+  }
+  if (isForbiddenPath(path) || isGeneratedCachePath(path)) {
+    return false;
   }
   const segments = path.split('/');
   return !segments.some((segment) =>
@@ -186,6 +225,24 @@ function verifyChecksums(stage) {
   assert.deepEqual(actual, expected, 'SHA256SUMS does not match the staged payload');
 }
 
+function verifyArchiveContents(archive, stage) {
+  const extracted = mkdtempSync(join(dirname(archive), '.esctt-verify-'));
+
+  try {
+    execFileSync('tar', ['-xzf', archive, '-C', extracted]);
+    const expectedFiles = filesIn(stage);
+    const actualEntries = nonDirectoryEntriesIn(extracted);
+    assert.deepEqual(actualEntries, expectedFiles, 'The archive entries do not match the staged payload');
+
+    for (const path of expectedFiles) {
+      assert.ok(lstatSync(join(extracted, path)).isFile(), `Archive entry is not a regular file: ${path}`);
+      assert.equal(sha256(join(extracted, path)), sha256(join(stage, path)), `Archive content mismatch: ${path}`);
+    }
+  } finally {
+    rmSync(extracted, { recursive: true, force: true });
+  }
+}
+
 function verifyArchive(archive, stage, manifest) {
   const archiveEntries = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8' })
     .split('\n')
@@ -193,13 +250,14 @@ function verifyArchive(archive, stage, manifest) {
     .filter(Boolean);
 
   for (const entry of archiveEntries) {
-    if (entry.startsWith('/') || entry.split('/').includes('..') || forbiddenPathPattern.test(entry)) {
+    if (entry.startsWith('/') || entry.split('/').includes('..') || isForbiddenPath(entry) || isGeneratedCachePath(entry)) {
       throw new Error(`Forbidden path in archive: ${entry}`);
     }
   }
 
   verifyManifest(stage, manifest);
   verifyChecksums(stage);
+  verifyArchiveContents(archive, stage);
 
   const archiveSet = new Set(archiveEntries);
   for (const file of filesIn(stage)) {
@@ -227,7 +285,8 @@ function sourceCommitFromGit() {
 function main() {
   const args = process.argv.slice(2);
   const version = option(args, '--version', null);
-  const sourceCommit = option(args, '--source-commit', process.env.GITHUB_SHA || sourceCommitFromGit());
+  const explicitSourceCommit = option(args, '--source-commit', null);
+  const sourceCommit = explicitSourceCommit || process.env.GITHUB_SHA || sourceCommitFromGit();
   const outputDirectory = resolve(repositoryRoot, option(args, '--output-dir', 'artifacts'));
   const themeDirectory = resolve(repositoryRoot, option(args, '--theme-dir', 'packages/theme'));
   const pluginDirectory = resolve(repositoryRoot, option(args, '--plugin-dir', 'packages/esctt-content'));
@@ -268,7 +327,7 @@ function main() {
     replaceVersionHeader(join(stage, 'web/app/plugins/esctt-content/esctt-content.php'), version);
 
     const sourceFiles = filesIn(stage);
-    const forbiddenFiles = sourceFiles.filter((path) => forbiddenPathPattern.test(path));
+    const forbiddenFiles = sourceFiles.filter((path) => isForbiddenPath(path) || isGeneratedCachePath(path));
     if (forbiddenFiles.length > 0) {
       throw new Error(`The staged artifact contains forbidden paths: ${forbiddenFiles.join(', ')}`);
     }

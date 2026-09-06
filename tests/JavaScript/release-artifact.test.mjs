@@ -32,6 +32,8 @@ function createReleaseFixture() {
   writeFixture(theme, 'functions.php', '<?php\n');
   writeFixture(theme, 'theme.json', '{}\n');
   writeFixture(theme, 'app/runtime.php', '<?php\n');
+  writeFixture(theme, 'app/credentials.json', 'secret\n');
+  writeFixture(theme, 'app/cache/generated.php', '<?php\n');
   writeFixture(theme, 'resources/views/page.blade.php', '<main>Page</main>\n');
   writeFixture(theme, 'resources/css/app.css', 'development source\n');
   writeFixture(theme, 'resources/images/logo.jpg', 'development media\n');
@@ -42,6 +44,8 @@ function createReleaseFixture() {
 
   writeFixture(plugin, 'esctt-content.php', '<?php\n/**\n * Version: 0.1.0\n */\n');
   writeFixture(plugin, 'src/runtime.php', '<?php\n');
+  writeFixture(plugin, 'src/private.key', 'secret\n');
+  writeFixture(plugin, 'src/.cache/generated.php', '<?php\n');
   writeFixture(plugin, 'tests/plugin.php', '<?php\n');
   writeFixture(plugin, 'media/logo.jpg', 'plugin media\n');
   writeFixture(plugin, 'composer.json', '{}\n');
@@ -49,6 +53,10 @@ function createReleaseFixture() {
   writeFixture(vendor, 'autoload.php', '<?php\n');
   writeFixture(vendor, 'composer/installed.php', '<?php\n');
   writeFixture(vendor, 'package/src/runtime.php', '<?php\n');
+  writeFixture(vendor, 'package/credentials.json', 'secret\n');
+  writeFixture(vendor, 'package/.cache/generated.php', '<?php\n');
+  writeFixture(vendor, 'package/cache/generated.php', '<?php\n');
+  writeFixture(vendor, 'package/storage/framework/cache/generated.php', '<?php\n');
   writeFixture(vendor, 'illuminate/cache/ArrayStore.php', '<?php\n');
   writeFixture(vendor, 'package/tests/test.php', '<?php\n');
   writeFixture(vendor, 'package/.gitignore', 'cache\n');
@@ -87,7 +95,7 @@ test('builds a traceable minimal release archive', () => {
     assert.match(entries, /web\/app\/plugins\/secure-custom-fields\/secure-custom-fields\.php/);
     assert.match(entries, /vendor\/autoload\.php/);
     assert.match(entries, /vendor\/illuminate\/cache\/ArrayStore\.php/);
-    assert.doesNotMatch(entries, /resources\/css|resources\/images|node_modules|\.env|(?:^|\/)tests(?:\/|$)|(?:^|\/)media(?:\/|$)|vendor\/bin|vendor\/.*\.gitignore|composer\.json/);
+    assert.doesNotMatch(entries, /resources\/css|resources\/images|node_modules|\.env|\.npmrc|credentials|private\.key|(?:^|\/)tests(?:\/|$)|(?:^|\/)media(?:\/|$)|(?:^|\/)\.cache(?:\/|$)|package\/cache|(?:^|\/)cache\/(?:data|views|pages)(?:\/|$)|storage\/framework\/cache|vendor\/bin|vendor\/.*\.gitignore|composer\.json/);
 
     const themeHeader = execFileSync('tar', ['-xOzf', archive, './web/app/themes/esctt/style.css'], { encoding: 'utf8' });
     assert.match(themeHeader, /Version:\s+0\.2\.0/);
