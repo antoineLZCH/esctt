@@ -1,0 +1,35 @@
+{
+  "name": "esctt/theme",
+  "type": "wordpress-theme",
+  "license": "MIT",
+  "description": "Sage theme for ES Colombienne Tennis de table.",
+  "homepage": "https://roots.io/sage/",
+  "keywords": [
+    "wordpress",
+    "sage"
+  ],
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  },
+  "require": {
+    "php": ">=8.3",
+    "roots/acorn": "^6.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.20"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "scripts": {
+    "post-autoload-dump": [
+      "Roots\\Acorn\\ComposerScripts::postAutoloadDump"
+    ]
+  }
+}

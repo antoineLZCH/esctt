@@ -20,4 +20,5 @@ For spec #16 and tickets #17–#37, claim only unblocked frontier work and coord
 
 - Presentation: apply `i-have-adhd` on every task; a direct `stop` or `normal mode` request overrides it.
 - Coding: apply `ponytail`; keep the smallest safe change and verify according to risk.
+- CLI first: when a supported CLI can scaffold a project or install dependencies, use it instead of hand-writing or copying boilerplate; reserve manual edits for project-specific integration.
 - Orchestration: use `sol-orchestrator` only for complex, independently parallelizable work.

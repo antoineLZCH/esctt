@@ -1,0 +1,90 @@
+{
+  "name": "esctt/wordpress",
+  "type": "project",
+  "license": "MIT",
+  "description": "Bedrock WordPress application for ES Colombienne Tennis de table.",
+  "homepage": "https://roots.io/bedrock/",
+  "keywords": [
+    "bedrock",
+    "wordpress"
+  ],
+  "repositories": [
+    {
+      "name": "wp-packages",
+      "type": "composer",
+      "url": "https://repo.wp-packages.org"
+    },
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org"
+    },
+    {
+      "type": "path",
+      "url": "../../packages/theme",
+      "options": {
+        "symlink": true
+      }
+    },
+    {
+      "type": "path",
+      "url": "../../packages/esctt-content",
+      "options": {
+        "symlink": true
+      }
+    }
+  ],
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.0",
+    "esctt/esctt-content": "dev-main",
+    "esctt/theme": "dev-main",
+    "oscarotero/env": "^2.0",
+    "roots/bedrock-autoloader": "^1.0",
+    "roots/bedrock-disallow-indexing": "^2.0",
+    "roots/wordpress": "7.1",
+    "roots/wp-config": "^1.0",
+    "vlucas/phpdotenv": "^5.0",
+    "wpackagist-plugin/secure-custom-fields": "^6.4"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.0",
+    "pestphp/pest": "^4.0"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "allow-plugins": {
+      "composer/installers": true,
+      "pestphp/pest-plugin": true,
+      "roots/wordpress-core-installer": true
+    },
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "extra": {
+    "installer-paths": {
+      "web/app/mu-plugins/{$name}/": [
+        "type:wordpress-muplugin"
+      ],
+      "web/app/plugins/esctt-content/": [
+        "esctt/esctt-content"
+      ],
+      "web/app/plugins/{$name}/": [
+        "type:wordpress-plugin"
+      ],
+      "web/app/themes/esctt/": [
+        "esctt/theme"
+      ],
+      "web/app/themes/{$name}/": [
+        "type:wordpress-theme"
+      ]
+    },
+    "wordpress-install-dir": "web/wp"
+  },
+  "scripts": {
+    "lint": "pint --test",
+    "lint:fix": "pint",
+    "test": "pest"
+  }
+}

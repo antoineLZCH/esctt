@@ -1,0 +1,29 @@
+.DS_Store
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Installed dependencies
+**/node_modules/
+**/vendor/
+
+# Composer-installed WordPress core and extensions
+apps/wordpress/web/wp/
+apps/wordpress/web/app/plugins/*
+!apps/wordpress/web/app/plugins/.gitkeep
+apps/wordpress/web/app/themes/*
+!apps/wordpress/web/app/themes/.gitkeep
+!apps/wordpress/web/app/themes/esctt
+apps/wordpress/web/app/uploads/*
+!apps/wordpress/web/app/uploads/.gitkeep
+
+# Generated Sage assets
+packages/theme/public/*
+!packages/theme/public/.gitkeep
+
+pnpm-debug.log

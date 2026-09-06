@@ -1,0 +1,10 @@
+{
+  "name": "esctt/esctt-content",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "description": "ES Colombienne Tennis de table content plugin.",
+  "require": {
+    "php": ">=8.3",
+    "wpackagist-plugin/secure-custom-fields": "^6.4"
+  }
+}
