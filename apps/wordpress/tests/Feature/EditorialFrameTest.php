@@ -127,26 +127,31 @@ test('published page content is validated at the REST and database seams', funct
             'post_content' => $rawHeading,
         ])->get_error_code())->toBe('esctt_h1_unique');
 
-    $invalidData = apply_filters('wp_insert_post_data', [
+    $invalidContent = apply_filters('wp_insert_post_empty_content', false, [
         'post_type' => 'page',
         'post_status' => 'publish',
         'post_content' => $invalidHero,
-    ], [], [], false);
-    $validData = apply_filters('wp_insert_post_data', [
+    ]);
+    $validContent = apply_filters('wp_insert_post_empty_content', false, [
         'post_type' => 'page',
         'post_status' => 'publish',
         'post_content' => $valid,
-    ], [], [], false);
-    $draftData = apply_filters('wp_insert_post_data', [
+    ]);
+    $draftContent = apply_filters('wp_insert_post_empty_content', false, [
         'post_type' => 'page',
         'post_status' => 'draft',
         'post_content' => $invalidHero,
-    ], [], [], false);
-    $postData = apply_filters('wp_insert_post_data', [
+    ]);
+    $postContent = apply_filters('wp_insert_post_empty_content', false, [
         'post_type' => 'post',
         'post_status' => 'publish',
         'post_content' => $invalidHero,
-    ], [], [], false);
+    ]);
+    $alreadyEmpty = apply_filters('wp_insert_post_empty_content', true, [
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'post_content' => $valid,
+    ]);
 
     require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
     require_once ABSPATH . 'wp-admin/includes/screen.php';
@@ -158,10 +163,11 @@ test('published page content is validated at the REST and database seams', funct
     ob_end_clean();
     $GLOBALS['current_screen'] = null;
 
-    expect($invalidData['post_status'])->toBe('draft')
-        ->and($validData['post_status'])->toBe('publish')
-        ->and($draftData['post_status'])->toBe('draft')
-        ->and($postData['post_status'])->toBe('publish');
+    expect($invalidContent)->toBeTrue()
+        ->and($validContent)->toBeFalse()
+        ->and($draftContent)->toBeFalse()
+        ->and($postContent)->toBeFalse()
+        ->and($alreadyEmpty)->toBeTrue();
 
     $postId = wp_insert_post([
         'post_type' => 'page',
@@ -170,10 +176,14 @@ test('published page content is validated at the REST and database seams', funct
         'post_content' => $invalidHero,
     ], true);
 
-    expect($postId)->toBeInt()
-        ->and(get_post_status($postId))->toBe('draft');
-
-    wp_delete_post($postId, true);
+    expect($postId)->toBeInstanceOf(WP_Error::class)
+        ->and($postId->get_error_code())->toBe('empty_content')
+        ->and(wp_insert_post([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_title' => 'Invalid page',
+            'post_content' => $invalidHero,
+        ]))->toBe(0);
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',

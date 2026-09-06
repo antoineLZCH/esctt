@@ -190,23 +190,21 @@ add_filter('rest_pre_insert_page', function (object $post) {
     return page_structure_error((string) $post->post_content) ?? $post;
 });
 
-add_filter('wp_insert_post_data', function (array $data): array {
-    if ('page' !== ($data['post_type'] ?? '')) {
-        return $data;
+add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $postarr): bool {
+    if ('page' !== ($postarr['post_type'] ?? '')) {
+        return $maybeEmpty;
     }
 
-    if (! in_array($data['post_status'] ?? '', ['publish', 'future'], true)) {
-        return $data;
+    if (! in_array($postarr['post_status'] ?? '', ['publish', 'future'], true)) {
+        return $maybeEmpty;
     }
 
-    if (null === page_structure_error(wp_unslash((string) ($data['post_content'] ?? '')))) {
-        return $data;
+    if (null !== page_structure_error(wp_unslash((string) ($postarr['post_content'] ?? '')))) {
+        return true;
     }
 
-    $data['post_status'] = 'draft';
-
-    return $data;
-});
+    return $maybeEmpty;
+}, 10, 2);
 
 /**
  * Inject styles into the block editor.
