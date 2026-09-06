@@ -25,7 +25,28 @@ try {
       assert.deepEqual(state, { overflow: false, slots: 8, matched: 4, clipped: false, missingImages: false }, `${width}/${variant}`);
       console.log(`${width}px / ${variant}: OK`);
     }
+    const url = new URL('./index.html?check=1', import.meta.url);
+    await page.goto(url.href);
+    assert.equal(await page.locator('body').getAttribute('data-variant'), width <= 700 ? 'B' : 'A', `${width}px / variante automatique`);
   }
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(new URL('./index.html', import.meta.url).href);
+  await page.keyboard.press('Tab');
+  assert.equal(await page.locator(':focus').textContent(), 'Aller au contenu');
+  const structure = await page.evaluate(() => ({
+    order: [...document.body.children].filter(el => el.matches('header,.notice,main')).map(el => el.tagName.toLowerCase() === 'aside' ? 'notice' : el.tagName.toLowerCase()),
+    skipTargets: [...document.querySelectorAll('.skip-links a')].map(link => link.getAttribute('href')),
+    faqItems: document.querySelectorAll('#faq details').length,
+    shirtPhotos: [...document.querySelectorAll('.shirt-photos img')].map(img => img.getAttribute('src')),
+    bannerIsExample: document.querySelector('.notice').textContent.includes('date à confirmer'),
+  }));
+  assert.deepEqual(structure, {
+    order: ['header', 'notice', 'main'],
+    skipTargets: ['#main', '#horaires', '#tarifs'],
+    faqItems: 5,
+    shirtPhotos: ['assets/maillot-face.jpg', 'assets/maillot-dos.jpg'],
+    bannerIsExample: true,
+  });
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
