@@ -44,8 +44,15 @@ test('pages expose a locked hero template and a limited block catalogue', functi
 
     $pageArgs = apply_filters('register_post_type_args', ['supports' => []], 'page');
     $otherArgs = apply_filters('register_post_type_args', ['supports' => []], 'post');
-    $pageBlocks = apply_filters('allowed_block_types_all', true, ['post_type' => 'page']);
-    $otherBlocks = apply_filters('allowed_block_types_all', true, ['post_type' => 'post']);
+    $pageContext = new WP_Block_Editor_Context([
+        'post' => new WP_Post((object) ['post_type' => 'page']),
+    ]);
+    $otherContext = new WP_Block_Editor_Context([
+        'post' => new WP_Post((object) ['post_type' => 'post']),
+    ]);
+    $pageBlocks = apply_filters('allowed_block_types_all', true, $pageContext);
+    $otherBlocks = apply_filters('allowed_block_types_all', true, $otherContext);
+    $emptyBlocks = apply_filters('allowed_block_types_all', true, new WP_Block_Editor_Context());
     $registeredPage = get_post_type_object('page');
 
     expect($pageArgs['template'])->toBe([
@@ -59,6 +66,7 @@ test('pages expose a locked hero template and a limited block catalogue', functi
         ->and($pageBlocks)->toContain('esctt/hero', 'core/paragraph', 'core/heading')
         ->and($pageBlocks)->not->toContain('core/html')
         ->and($otherBlocks)->toBeTrue()
+        ->and($emptyBlocks)->toBeTrue()
         ->and($registeredPage->template)->toBe($pageArgs['template'])
         ->and($registeredPage->template_lock)->toBeFalse();
 })->skip(

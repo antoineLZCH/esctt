@@ -7,6 +7,7 @@
 namespace App;
 
 use Illuminate\Support\Facades\Vite;
+use WP_Block_Editor_Context;
 use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
@@ -132,8 +133,8 @@ add_filter('register_post_type_args', function (array $args, string $postType): 
     return $args;
 }, 10, 2);
 
-add_filter('allowed_block_types_all', function (bool|array $allowed, array $context): bool|array {
-    if ('page' !== ($context['post_type'] ?? '')) {
+add_filter('allowed_block_types_all', function (bool|array $allowed, WP_Block_Editor_Context $context): bool|array {
+    if ('page' !== $context->post?->post_type) {
         return $allowed;
     }
 
