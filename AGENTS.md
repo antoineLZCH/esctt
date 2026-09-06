@@ -12,6 +12,10 @@ Use the canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 
 Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 
+### Site rebuild execution
+
+For spec #16 and tickets #17–#37, claim only unblocked frontier work and coordinate parallel execution using `docs/agents/site-rebuild-parallelism.md`.
+
 ### Working style
 
 - Presentation: apply `i-have-adhd` on every task; a direct `stop` or `normal mode` request overrides it.
