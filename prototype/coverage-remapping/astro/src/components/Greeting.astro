@@ -1,0 +1,10 @@
+---
+interface Props {
+  member: boolean
+}
+
+const { member } = Astro.props
+const greeting = member ? 'Bonjour membre' : 'Bonjour visiteur'
+---
+
+<p>{greeting}</p>

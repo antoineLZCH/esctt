@@ -1,0 +1,30 @@
+
+> astro:fail
+> vitest run --config astro/vitest.config.ts
+
+18:23:55 [WARN] Missing pages directory: src/pages
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:23:55
+   Duration  395ms (transform 72%, import 23%, tests 4%, worker 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------|---------|----------|---------|---------|-------------------
+All files       |     100 |       50 |     100 |     100 |                   
+ Greeting.astro |     100 |       50 |     100 |     100 | 7                 
+----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 3/3 )
+Branches     : 50% ( 1/2 )
+Functions    : 100% ( 0/0 )
+Lines        : 100% ( 3/3 )
+================================================================================
+ERROR: Coverage for branches (50%) does not meet global threshold (100%)

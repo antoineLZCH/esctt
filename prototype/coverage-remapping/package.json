@@ -1,0 +1,32 @@
+{
+  "name": "issue-11-coverage-remapping-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "! npm run astro:fail && npm run astro:pass && ! npm run vue:laravel:fail && npm run vue:laravel:pass && ! npm run vue:adonis:fail && npm run vue:adonis:pass && ! npm run adonis:fail && npm run adonis:pass",
+    "astro:fail": "vitest run --config astro/vitest.config.ts",
+    "astro:pass": "COVER_ALL=1 vitest run --config astro/vitest.config.ts",
+    "vue:laravel:fail": "VUE_HOST=laravel vitest run --config vue/vitest.config.ts",
+    "vue:laravel:pass": "COVER_ALL=1 VUE_HOST=laravel vitest run --config vue/vitest.config.ts",
+    "vue:adonis:fail": "VUE_HOST=adonis vitest run --config vue/vitest.config.ts",
+    "vue:adonis:pass": "COVER_ALL=1 VUE_HOST=adonis vitest run --config vue/vitest.config.ts",
+    "adonis:fail": "c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/failing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts",
+    "adonis:pass": "COVER_ALL=1 c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/passing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts"
+  },
+  "devDependencies": {
+    "@adonisjs/vite": "^6.0.2",
+    "@japa/assert": "^4.2.0",
+    "@japa/runner": "^5.3.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^5.0.0",
+    "@vue/test-utils": "^2.5.0",
+    "astro": "^7.3.1",
+    "c8": "^12.0.0",
+    "jsdom": "^30.0.1",
+    "laravel-vite-plugin": "^3.2.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0",
+    "vue": "^3.5.42"
+  }
+}

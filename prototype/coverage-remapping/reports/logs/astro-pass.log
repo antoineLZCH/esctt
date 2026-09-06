@@ -1,0 +1,27 @@
+
+> astro:pass
+> COVER_ALL=1 vitest run --config astro/vitest.config.ts
+
+18:23:56 [WARN] Missing pages directory: src/pages
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:23:56
+   Duration  447ms (transform 71%, import 24%, tests 4%, worker 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------|---------|----------|---------|---------|-------------------
+----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 3/3 )
+Branches     : 100% ( 2/2 )
+Functions    : 100% ( 0/0 )
+Lines        : 100% ( 3/3 )
+================================================================================

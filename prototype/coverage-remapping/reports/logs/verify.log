@@ -1,0 +1,209 @@
+
+> verify
+> ! npm run astro:fail && npm run astro:pass && ! npm run vue:laravel:fail && npm run vue:laravel:pass && ! npm run vue:adonis:fail && npm run vue:adonis:pass && ! npm run adonis:fail && npm run adonis:pass
+
+
+> astro:fail
+> vitest run --config astro/vitest.config.ts
+
+18:26:54 [WARN] Missing pages directory: src/pages
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:54
+   Duration  427ms (transform 71%, import 24%, tests 4%, worker 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------|---------|----------|---------|---------|-------------------
+All files       |     100 |       50 |     100 |     100 |                   
+ Greeting.astro |     100 |       50 |     100 |     100 | 7                 
+----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 3/3 )
+Branches     : 50% ( 1/2 )
+Functions    : 100% ( 0/0 )
+Lines        : 100% ( 3/3 )
+================================================================================
+ERROR: Coverage for branches (50%) does not meet global threshold (100%)
+
+> astro:pass
+> COVER_ALL=1 vitest run --config astro/vitest.config.ts
+
+18:26:55 [WARN] Missing pages directory: src/pages
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:55
+   Duration  418ms (transform 70%, import 25%, tests 4%, worker 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------|---------|----------|---------|---------|-------------------
+----------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 3/3 )
+Branches     : 100% ( 2/2 )
+Functions    : 100% ( 0/0 )
+Lines        : 100% ( 3/3 )
+================================================================================
+
+> vue:laravel:fail
+> VUE_HOST=laravel vitest run --config vue/vitest.config.ts
+
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping/vue/laravel
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:56
+   Duration  557ms (environment 82%, transform 7%, import 7%, worker 3%, tests 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------|---------|----------|---------|---------|-------------------
+All files     |     100 |       50 |     100 |     100 |                   
+ Greeting.vue |     100 |       50 |     100 |     100 | 5                 
+--------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 4/4 )
+Branches     : 50% ( 1/2 )
+Functions    : 100% ( 1/1 )
+Lines        : 100% ( 3/3 )
+================================================================================
+ERROR: Coverage for branches (50%) does not meet global threshold (100%)
+
+> vue:laravel:pass
+> COVER_ALL=1 VUE_HOST=laravel vitest run --config vue/vitest.config.ts
+
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping/vue/laravel
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:57
+   Duration  416ms (environment 71%, import 10%, transform 9%, worker 7%, tests 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------|---------|----------|---------|---------|-------------------
+--------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 4/4 )
+Branches     : 100% ( 2/2 )
+Functions    : 100% ( 1/1 )
+Lines        : 100% ( 3/3 )
+================================================================================
+
+> vue:adonis:fail
+> VUE_HOST=adonis vitest run --config vue/vitest.config.ts
+
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping/vue/adonis
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:58
+   Duration  417ms (environment 76%, import 9%, transform 7%, worker 5%, tests 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------|---------|----------|---------|---------|-------------------
+All files     |     100 |       50 |     100 |     100 |                   
+ Greeting.vue |     100 |       50 |     100 |     100 | 5                 
+--------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 4/4 )
+Branches     : 50% ( 1/2 )
+Functions    : 100% ( 1/1 )
+Lines        : 100% ( 3/3 )
+================================================================================
+ERROR: Coverage for branches (50%) does not meet global threshold (100%)
+
+> vue:adonis:pass
+> COVER_ALL=1 VUE_HOST=adonis vitest run --config vue/vitest.config.ts
+
+
+ RUN  v5.0.0 /Users/antoinelzch/Projects/esctt/prototype/coverage-remapping/vue/adonis
+      Coverage enabled with v8
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  18:26:58
+   Duration  453ms (environment 75%, transform 10%, import 8%, worker 5%, tests 2%)
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------|---------|----------|---------|---------|-------------------
+--------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 4/4 )
+Branches     : 100% ( 2/2 )
+Functions    : 100% ( 1/1 )
+Lines        : 100% ( 3/3 )
+================================================================================
+
+> adonis:fail
+> c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/failing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts
+
+
+adonis/tests/greeting.spec.ts
+  ✔ returns the member greeting (0.88ms)
+
+ PASSED 
+
+Tests  1 passed (1)
+ Time  2ms
+-------------|---------|----------|---------|---------|-------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------|---------|----------|---------|---------|-------------------
+All files    |     100 |    66.66 |     100 |     100 |                   
+ greeting.ts |     100 |    66.66 |     100 |     100 | 2                 
+-------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for branches (66.66%) does not meet global threshold (100%)
+
+> adonis:pass
+> COVER_ALL=1 c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/passing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts
+
+
+adonis/tests/greeting.spec.ts
+  ✔ returns the member greeting (0.59ms)
+  ✔ returns the visitor greeting (0.04ms)
+
+ PASSED 
+
+Tests  2 passed (2)
+ Time  3ms
+-------------|---------|----------|---------|---------|-------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------|---------|----------|---------|---------|-------------------
+All files    |     100 |      100 |     100 |     100 |                   
+ greeting.ts |     100 |      100 |     100 |     100 |                   
+-------------|---------|----------|---------|---------|-------------------

@@ -1,0 +1,19 @@
+
+> adonis:pass
+> COVER_ALL=1 c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/passing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts
+
+
+adonis/tests/greeting.spec.ts
+  ✔ returns the member greeting (0.81ms)
+  ✔ returns the visitor greeting (0.06ms)
+
+ PASSED 
+
+Tests  2 passed (2)
+ Time  4ms
+-------------|---------|----------|---------|---------|-------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------|---------|----------|---------|---------|-------------------
+All files    |     100 |      100 |     100 |     100 |                   
+ greeting.ts |     100 |      100 |     100 |     100 |                   
+-------------|---------|----------|---------|---------|-------------------

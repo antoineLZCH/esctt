@@ -1,0 +1,19 @@
+
+> adonis:fail
+> c8 --clean --include 'adonis/app/**/*.ts' --reports-dir reports/failing/adonis --reporter=text --reporter=json --reporter=json-summary --check-coverage --lines 100 --branches 100 --functions 100 --statements 100 tsx adonis/bin-test.ts
+
+
+adonis/tests/greeting.spec.ts
+  ✔ returns the member greeting (0.8ms)
+
+ PASSED 
+
+Tests  1 passed (1)
+ Time  4ms
+-------------|---------|----------|---------|---------|-------------------
+File         | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------|---------|----------|---------|---------|-------------------
+All files    |     100 |    66.66 |     100 |     100 |                   
+ greeting.ts |     100 |    66.66 |     100 |     100 | 2                 
+-------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for branches (66.66%) does not meet global threshold (100%)
