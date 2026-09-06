@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maillot ESCTT — essai 3D</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f4ed;color:#392b2a;font:16px/1.5 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:35px 24px}header{display:flex;justify-content:space-between;gap:25px;align-items:start;border-bottom:1px solid #ccc3b7;padding-bottom:25px}h1{font-size:clamp(2rem,4vw,3.4rem);line-height:1.05;letter-spacing:-.04em;margin:8px 0 16px}h2{font-size:1.2rem;margin:0 0 12px}.tag{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700}p{max-width:65ch}.muted{color:#6b5f54;font-size:.87rem}.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:32px;margin-top:28px}.stage{position:relative;background:radial-gradient(ellipse at 50% 40%,#eee7dc,#ded4c5);border:1px solid #cabdab;border-radius:3px;overflow:hidden}.stage::after{content:'';position:absolute;width:45%;height:20px;left:27%;bottom:8%;background:#4b362d40;filter:blur(14px);border-radius:50%;pointer-events:none}canvas{display:block;width:100%;height:540px;touch-action:pan-y;cursor:grab;position:relative;z-index:1}canvas:active{cursor:grabbing}.note{position:absolute;top:18px;left:18px;font-size:.74rem;color:#655847}.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0}button{font:inherit;min-height:44px;padding:9px 20px;border:1px solid #542e37;background:transparent;color:#542e37;border-radius:3px;cursor:pointer}button[aria-pressed=true]{background:#542e37;color:white}button:focus-visible,input:focus-visible,a:focus-visible,canvas:focus-visible{outline:3px solid #185cb0;outline-offset:4px}.angle{display:flex;align-items:center;gap:15px}.angle input{flex:1;min-width:0;accent-color:#542e37;min-height:44px}.photos{display:grid;grid-template-columns:1fr 1fr;gap:12px}.photos figure{margin:0}.photos img{display:block;width:100%;aspect-ratio:9/16;object-fit:contain;background:#333}.photos figcaption{font-size:.8rem;margin-top:8px}.limits{border-top:1px solid #ccc3b7;margin-top:28px;padding-top:20px}.limits p{margin-bottom:8px}a{color:inherit;text-underline-offset:4px}#status{font-size:.85rem;min-height:1.5em}@media(max-width:750px){main{padding:25px 18px}.layout{grid-template-columns:1fr;gap:25px}header{display:block}canvas{height:410px}.photos{max-width:470px}}
+</style></head>
+<body><main><header><div><span class="tag">ES Colombienne · étude du maillot</span><h1>Nos couleurs,<br>en volume.</h1><p>Une forme 3D simplifiée pour juger l’intérêt de l’interaction, à côté des vraies photos.</p></div><p class="muted">Prototype jetable<br>Ni modèle fabricant,<br>ni rendu photoréaliste.</p></header>
+<section class="limits" aria-labelledby="feedback-title"><h2 id="feedback-title">Suite à votre retour : privilégier les vraies photos.</h2><p>Le rendu schématique n’est pas assez convaincant. Supprimer l’interaction ne corrigerait pas sa forme ni ses matières.</p><p>Un SVG est une image vectorielle 2D : on peut l’animer, mais le faire tourner ne crée pas les vues manquantes du maillot. Un vrai tour complet pré-rendu demanderait d’abord un modèle 3D fidèle, puis une vidéo ou une suite d’images. Une animation automatique devrait aussi pouvoir être arrêtée et respecter la réduction des mouvements.</p><p><strong>Ma recommandation : vos deux photos, face et dos, sans animation.</strong> Un beau rendu fixe pourra les remplacer si le DA ou le fabricant fournit un asset adapté. Confirmez « photos face/dos » dans votre retour pour retenir cette option.</p></section><div class="layout"><section aria-labelledby="model-title"><h2 id="model-title">Essai 3D interactif</h2><div class="stage"><span class="note">Volume approximatif · marquages partiellement reconstitués</span><canvas id="model" tabindex="0" role="img" aria-label="Modèle 3D simplifié du maillot bordeaux et taupe. Utilisez les boutons Face, Trois-quarts et Dos ou le curseur sous le modèle." aria-describedby="instructions">Votre navigateur ne prend pas en charge le canvas. Les photos du maillot restent disponibles à côté.</canvas></div><div class="controls" aria-label="Points de vue"><button data-angle="0">Face</button><button data-angle="-35">Trois-quarts</button><button data-angle="180">Dos</button></div><label class="angle">Rotation <input id="angle" type="range" min="-180" max="180" value="-35" aria-label="Rotation du maillot en degrés"><output id="degrees">−35°</output></label><p class="muted" id="instructions">Glissez horizontalement sur le maillot, ou utilisez le curseur au clavier. Pas de rotation automatique.</p><p id="status" role="status">Chargement du volume…</p></section>
+<section aria-labelledby="photos-title"><h2 id="photos-title">Le vrai maillot</h2><div class="photos"><figure><a href="assets/maillot-face.jpg" target="_blank" rel="noopener"><img src="assets/maillot-face.jpg" alt="Face du vrai maillot : tissu bordeaux, écusson et grand marquage ESCTT vert clair"></a><figcaption>Face · photo fournie</figcaption></figure><figure><a href="assets/maillot-dos.jpg" target="_blank" rel="noopener"><img src="assets/maillot-dos.jpg" alt="Dos du vrai maillot : panneau taupe, épaules claires et inscription Colombes Tennis de table"></a><figcaption>Dos · photo fournie</figcaption></figure></div><div class="limits"><h2>Ce qu’on peut décider ici</h2><p>L’intérêt de voir le dos et de manipuler le maillot, par rapport à deux images fixes.</p><p class="muted">Le volume, les plis, les empiècements et certains marquages sont approximatifs. Le grand ESCTT est recomposé en texte, pas repris du fichier d’impression. La coupe et le col ne sont pas reproduits fidèlement.</p><p class="muted">Un rendu final crédible demanderait un modèle 3D ajusté à la coupe et les fichiers d’impression. Les photos restent la référence de vérité.</p></div></section></div></main>
+<script>
+// PROTOTYPE : maillage paramétrique WebGL natif, aucune dépendance ni reconstruction photogrammétrique.
+const canvas=document.getElementById('model'), status=document.getElementById('status');
+const gl=canvas.getContext('webgl',{antialias:true,alpha:true});
+if(!gl){status.textContent='3D indisponible sur ce navigateur : utilisez les deux photos.';document.querySelectorAll('button,input').forEach(el=>el.disabled=true);}
+else init().catch(error=>{status.textContent='Le rendu 3D n’a pas pu charger. Les photos restent consultables.';console.error(error);});
+async function init(){
+ const vs=`attribute vec3 position;attribute vec3 normal;attribute vec2 uv;uniform float angle;uniform float aspect;varying vec3 n;varying vec3 point;varying vec2 tex;void main(){float c=cos(angle),s=sin(angle);mat3 r=mat3(c,0.,-s,0.,1.,0.,s,0.,c);vec3 p=r*position;point=p;n=r*normal;tex=uv;float z=4.8-p.z;gl_Position=vec4(p.x*2.8/aspect,p.y*2.8,z-0.2,z);}`;
+ const fs=`precision mediump float;varying vec3 n;varying vec3 point;varying vec2 tex;uniform sampler2D fabric;void main(){vec3 normal=normalize(n);if(!gl_FrontFacing)normal=-normal;vec3 light=normalize(vec3(-2.,3.,4.));float diffuse=max(dot(normal,light),0.);float rim=pow(1.-max(dot(normal,vec3(0.,0.,1.)),0.),3.);float knit=0.98+0.02*sin(tex.x*2600.)*sin(tex.y*1900.);vec3 color=texture2D(fabric,tex).rgb;gl_FragColor=vec4(color*(0.48+0.55*diffuse)*knit+vec3(0.08)*rim,1.);}`;
+ function shader(type,source){const sh=gl.createShader(type);gl.shaderSource(sh,source);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(sh));return sh;}
+ const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,vs));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));gl.useProgram(program);
+ const textureCanvas=document.createElement('canvas');textureCanvas.width=2048;textureCanvas.height=1024;const ctx=textureCanvas.getContext('2d');
+ ctx.fillStyle='#743b42';ctx.fillRect(0,0,2048,1024);ctx.fillStyle='#afa495';ctx.fillRect(1024,0,1024,1024);
+ // Le dos taupe est encadré de panneaux bordeaux et d'empiècements clairs schématiques.
+ ctx.fillStyle='#743b42';ctx.fillRect(1024,250,130,774);ctx.fillRect(1918,250,130,774);
+ ctx.fillStyle='#ede9de';for(const x of [1040,1810]){ctx.beginPath();ctx.ellipse(x+90,175,120,225,x<1500?-.3:.3,0,Math.PI*2);ctx.fill();}
+ ctx.fillStyle='#dbeaaf';ctx.textAlign='center';ctx.font='900 96px Arial';ctx.fillText('ESCTT',512,545);ctx.fillRect(337,563,350,4);ctx.font='bold 14px Arial';ctx.fillText('ÉTOILE SPORTIVE COLOMBIENNE TENNIS DE TABLE',512,587);
+ ctx.font='bold italic 30px Arial';ctx.fillText('PPP',370,292);
+ ctx.font='900 77px Arial';ctx.fillText('COLOMBES',1536,400);ctx.font='bold 33px Arial';ctx.fillText('TENNIS DE TABLE',1536,447);
+ ctx.font='italic 20px Arial';ctx.fillText('PERFORMANCE',1536,168);
+ // Fermeture frontale indicative.
+ ctx.strokeStyle='#562e35';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(512,40);ctx.lineTo(512,300);ctx.stroke();ctx.strokeStyle='#93666a';ctx.lineWidth=2;ctx.stroke();
+ const crest=new Image();crest.src='assets/logo-colombes.svg';await crest.decode();
+ const crestCanvas=document.createElement('canvas');crestCanvas.width=144;crestCanvas.height=200;const cc=crestCanvas.getContext('2d');cc.drawImage(crest,0,0,144,200);cc.globalCompositeOperation='source-in';cc.fillStyle='#dbeaaf';cc.fillRect(0,0,144,200);ctx.drawImage(crestCanvas,625,200,72,100);
+ const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,textureCanvas);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+ const positions=[],normals=[],uvs=[];
+ function surface(rows,columns,point){
+  for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+   const a=point(row/rows,col/columns),b=point((row+1)/rows,col/columns),c=point(row/rows,(col+1)/columns),d=point((row+1)/rows,(col+1)/columns);
+   for(const triangle of [[a,b,c],[c,b,d]]){
+    const u=triangle[1].p.map((x,i)=>x-triangle[0].p[i]),v=triangle[2].p.map((x,i)=>x-triangle[0].p[i]);const n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]];const len=Math.hypot(...n)||1;
+    for(const vertex of triangle){positions.push(...vertex.p);normals.push(...n.map(x=>x/len));uvs.push(...vertex.uv);}
+   }
+  }
+ }
+ // ponytail: buste et manches séparés, coupe schématique ; remplacer par un GLB fabricant pour la fidélité.
+ surface(65,100,(t,u)=>{
+  const theta=u*Math.PI*2,y=-1.15+t*2.27;
+  const shoulder=t>.86?(t-.86)/.14:0;
+  const width=(.65-.045*Math.sin(t*Math.PI)+.13*Math.pow(t,3))*(1-shoulder*.64);
+  const depth=.245*(1-shoulder*.32);
+  const fold=(.009*Math.sin(theta*12+t*5)+.007*Math.cos(theta*21-t*7))*Math.sin(Math.PI*t);
+  return {p:[-Math.cos(theta)*(width+fold),y,Math.sin(theta)*(depth+fold)],uv:[u,1-t]};
+ });
+ for(const side of [-1,1])surface(24,48,(t,u)=>{
+  const theta=u*Math.PI*2,r=.235-t*.025;
+  return {p:[side*(.62+t*.51)+Math.cos(theta)*r*.50,.81-t*.31+Math.cos(theta)*r*.86,Math.sin(theta)*r],uv:[.02+t*.07,.25+u*.02]};
+ });
+ // Col : anneau sombre distinct autour de l'ouverture supérieure.
+ surface(4,80,(t,u)=>{const a=u*Math.PI*2;return {p:[-.281*Math.cos(a),1.105+t*.055,.17*Math.sin(a)],uv:[.03,.4+t*.01]};});
+ for(const [name,data,size] of [['position',positions,3],['normal',normals,3],['uv',uvs,2]]){const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);const loc=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,0,0);}
+ gl.enable(gl.DEPTH_TEST);gl.clearColor(0,0,0,0);const angleLoc=gl.getUniformLocation(program,'angle'),aspectLoc=gl.getUniformLocation(program,'aspect');
+ const slider=document.getElementById('angle'),degrees=document.getElementById('degrees');let angle=-35;
+ function draw(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);gl.viewport(0,0,canvas.width,canvas.height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.uniform1f(angleLoc,angle*Math.PI/180);gl.uniform1f(aspectLoc,canvas.width/canvas.height);gl.drawArrays(gl.TRIANGLES,0,positions.length/3);}
+ function setAngle(value){angle=((value+180)%360+360)%360-180;if(value===180)angle=180;slider.value=angle;degrees.textContent=`${Math.round(angle)}°`;document.querySelectorAll('[data-angle]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.angle)===angle)));draw();}
+ slider.addEventListener('input',()=>setAngle(Number(slider.value)));document.querySelectorAll('[data-angle]').forEach(button=>button.addEventListener('click',()=>setAngle(Number(button.dataset.angle))));
+ let drag=null;canvas.addEventListener('pointerdown',event=>{drag={x:event.clientX,angle};canvas.setPointerCapture(event.pointerId);});canvas.addEventListener('pointermove',event=>{if(drag)setAngle(drag.angle+(event.clientX-drag.x)*.6);});for(const name of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(name,()=>drag=null);
+ canvas.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight'].includes(event.key)){event.preventDefault();setAngle(angle+(event.key==='ArrowRight'?10:-10));}});
+ new ResizeObserver(draw).observe(canvas);setAngle(-35);status.textContent='Volume prêt · face, trois-quarts et dos disponibles.';window.prototypeReady=true;
+}
+</script></body></html>
