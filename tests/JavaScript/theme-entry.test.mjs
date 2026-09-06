@@ -17,11 +17,52 @@ test('theme JavaScript entries parse and the application entry loads', async () 
         assert.equal(result.status, 0, result.stderr);
     }
 
+    const registeredBlocks = new Map();
+    globalThis.window = {
+        wp: {
+            blocks: {
+                registerBlockType: (name, settings) => registeredBlocks.set(name, settings),
+            },
+            blockEditor: {
+                BlockControls: 'BlockControls',
+                RichText: 'RichText',
+                useBlockProps: (props) => props,
+            },
+            components: { ToolbarButton: 'ToolbarButton' },
+            element: {
+                Fragment: 'Fragment',
+                createElement: (type, props, ...children) => ({ type, props, children }),
+            },
+            i18n: { __: (text) => text },
+        },
+    };
     globalThis.document = { readyState: 'complete' };
 
     for (const entry of entries.filter((file) => file.endsWith('.js'))) {
         await import(pathToFileURL(join(root, 'packages/theme/resources/js', entry)).href);
     }
 
+    const hero = registeredBlocks.get('esctt/hero');
+    assert.ok(hero);
+    assert.equal(hero.save(), null);
+
+    const changes = [];
+    const regular = hero.edit({
+        attributes: { compact: false, title: 'Club' },
+        setAttributes: (value) => changes.push(value),
+    });
+    const compact = hero.edit({
+        attributes: { compact: true, title: 'Club' },
+        setAttributes: (value) => changes.push(value),
+    });
+
+    regular.children[0].children[0].props.onClick();
+    regular.children[1].children[0].props.onChange('Nouveau titre');
+
+    assert.equal(regular.children[1].props.className, 'esctt-hero');
+    assert.equal(compact.children[1].props.className, 'esctt-hero esctt-hero--compact');
+    assert.deepEqual(changes, [{ compact: true }, { title: 'Nouveau titre' }]);
+
     delete globalThis.document;
+    delete globalThis.window;
 });
