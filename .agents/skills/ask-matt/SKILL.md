@@ -1,6 +1,6 @@
 ---
 name: ask-matt
-description: Ask which skill or flow fits your situation. A router over the skills in this repo.
+description: Use when unsure which project skill or flow fits.
 disable-model-invocation: true
 ---
 

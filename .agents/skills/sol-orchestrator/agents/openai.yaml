@@ -1,0 +1,7 @@
+interface:
+  display_name: "Sol Orchestrator"
+  short_description: "Bounded multi-agent orchestration for complex coding"
+  default_prompt: "Use $sol-orchestrator when this coding task has independent workstreams or needs separate verification."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ponytail"
+  short_description: "Minimal coding without unsafe shortcuts"
+  default_prompt: "Use $ponytail for this coding task."
+
+policy:
+  allow_implicit_invocation: true

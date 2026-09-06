@@ -1,0 +1,7 @@
+interface:
+  display_name: "I Have ADHD"
+  short_description: "Action-first output for ADHD readers"
+  default_prompt: "Use $i-have-adhd on every response in this repository."
+
+policy:
+  allow_implicit_invocation: true

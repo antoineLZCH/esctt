@@ -11,3 +11,9 @@ Use the canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+
+### Working style
+
+- Presentation: apply `i-have-adhd` on every task; a direct `stop` or `normal mode` request overrides it.
+- Coding: apply `ponytail`; keep the smallest safe change and verify according to risk.
+- Orchestration: use `sol-orchestrator` only for complex, independently parallelizable work.
