@@ -12,7 +12,7 @@
 @media(prefers-reduced-motion:no-preference){a,button{transition:background-color .15s ease}}
 </style>
 </head>
-<body data-variant="B">
+<body data-variant="A">
 <a class="skip" href="#main">Aller au contenu</a>
 <div class="notice"><strong>Prototype de discussion</strong> · données de démonstration · graphisme provisoire</div>
 <header><nav class="wrap" aria-label="Navigation principale"><a class="wordmark" href="#main"><img src="assets/logo-colombes-ventre.svg" alt="ES Colombienne Tennis de table"></a><div class="links"><a href="#horaires">Horaires et lieux</a><a href="#tarifs">Tarifs</a><a class="button" href="#inscriptions">S’inscrire</a></div></nav></header>
@@ -38,7 +38,7 @@
 <script>
 const variants = ['A','B','C'];
 const labels = {A:'Grille hebdomadaire',B:'Créneaux par jour',C:'Semaine en lignes'};
-const descriptions = {A:'A — Une grille horaire commune desktop/mobile ; sur mobile, défilement horizontal à évaluer.',B:'B — Des blocs par jour, en trois colonnes sur desktop et empilés sur mobile. Pas de défilement horizontal.',C:'C — Une semaine en lignes, jour à gauche et créneaux à droite. Plus compacte, sans axe horaire.'};
+const descriptions = {A:'A — Agenda hebdomadaire : les jours en colonnes, les heures en lignes. Affiché en priorité suite à votre retour. Sur mobile, le défilement horizontal reste à évaluer.',B:'B — Des blocs par jour, en trois colonnes sur desktop et empilés sur mobile. Pas de défilement horizontal.',C:'C — Une semaine en lignes, jour à gauche et créneaux à droite. Plus compacte, sans axe horaire.'};
 const days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
 const profiles = {young:'Jeune',leisure:'Adulte loisir',competition:'Adulte compétition'};
 const sessions = [
@@ -51,8 +51,8 @@ const sessions = [
  {day:5,start:9,end:11,title:'Découverte jeunes',place:'Salle B',profiles:['young']},
  {day:5,start:11,end:13,title:'Jeu partagé',place:'Salle B',profiles:['young','leisure']}
 ];
-let variant = new URLSearchParams(location.search).get('variant') || 'B';
-if (!variants.includes(variant)) variant = 'B';
+let variant = new URLSearchParams(location.search).get('variant') || 'A';
+if (!variants.includes(variant)) variant = 'A';
 let profile = 'all';
 const matches = s => profile !== 'all' && s.profiles.includes(profile);
 function hour(n){return `${Math.floor(n)%24} h${n%1 ? ' 30' : ''}${n>=24?' (+1 j)':''}`;}
