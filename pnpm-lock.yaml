@@ -8,6 +8,8 @@ importers:
 
   .: {}
 
+  apps/wordpress: {}
+
   packages/esctt-content: {}
 
   packages/theme:

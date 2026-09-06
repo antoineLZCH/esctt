@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 const requiredFiles = [
   'pnpm-workspace.yaml',
+  'apps/wordpress/package.json',
   'apps/wordpress/composer.json',
   'apps/wordpress/composer.lock',
   'apps/wordpress/web/wp-config.php',

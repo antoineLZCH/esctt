@@ -1,0 +1,10 @@
+{
+  "name": "@esctt/wordpress",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Bedrock WordPress application for ES Colombienne Tennis de table",
+  "scripts": {
+    "composer:install": "composer install --no-interaction --prefer-dist",
+    "test": "composer test"
+  }
+}

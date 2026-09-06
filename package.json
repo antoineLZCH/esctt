@@ -4,13 +4,13 @@
   "packageManager": "pnpm@10.33.1",
   "scripts": {
     "setup:site": "pnpm run wordpress:install && pnpm run theme:build",
-    "wordpress:install": "composer install --working-dir=apps/wordpress --no-interaction --prefer-dist",
+    "wordpress:install": "pnpm --filter @esctt/wordpress composer:install",
     "theme:build": "pnpm --filter @esctt/theme build",
     "theme:dev": "pnpm --filter @esctt/theme dev",
     "dev": "php -S 127.0.0.1:8080 -t apps/wordpress/web apps/wordpress/server.php",
     "check:scaffold": "node scripts/check-scaffold.mjs",
     "check:php": "find apps/wordpress/config apps/wordpress/tests apps/wordpress/web/app/mu-plugins apps/wordpress/web/index.php apps/wordpress/web/wp-config.php packages -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 php -l",
     "check": "pnpm run check:scaffold && pnpm run check:php && pnpm run theme:build",
-    "test": "pnpm run check && composer test --working-dir=apps/wordpress"
+    "test": "pnpm run check && pnpm --filter @esctt/wordpress test"
   }
 }
