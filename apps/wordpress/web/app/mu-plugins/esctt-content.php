@@ -11,6 +11,10 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
+if (wp_installing() || ! is_blog_installed()) {
+    return;
+}
+
 foreach ([
     WP_PLUGIN_DIR . '/secure-custom-fields/secure-custom-fields.php',
     WP_PLUGIN_DIR . '/esctt-content/esctt-content.php',

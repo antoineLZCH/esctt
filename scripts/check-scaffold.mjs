@@ -42,6 +42,7 @@ assert.match(server, /\$documentRoot = __DIR__ \. '\/web';/);
 assert.match(server, /\$file = \$documentRoot \. \$path;/);
 
 const loader = fs.readFileSync(path.join(root, 'apps/wordpress/web/app/mu-plugins/esctt-content.php'), 'utf8');
+assert.match(loader, /wp_installing\(\) \|\| ! is_blog_installed\(\)/);
 assert.ok(loader.indexOf('secure-custom-fields.php') < loader.indexOf('esctt-content.php'));
 
 const lock = readJson('apps/wordpress/composer.lock');
