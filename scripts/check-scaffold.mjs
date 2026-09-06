@@ -8,6 +8,7 @@ const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), 'ut
 const requiredFiles = [
   'pnpm-workspace.yaml',
   'apps/wordpress/package.json',
+  'apps/wordpress/server.php',
   'apps/wordpress/composer.json',
   'apps/wordpress/composer.lock',
   'apps/wordpress/web/wp-config.php',
@@ -34,6 +35,10 @@ assert.equal(wordpress.require['wpackagist-plugin/advanced-custom-fields-pro'], 
 
 const application = fs.readFileSync(path.join(root, 'apps/wordpress/config/application.php'), 'utf8');
 assert.match(application, /WP_DEFAULT_THEME', 'esctt'/);
+
+const server = fs.readFileSync(path.join(root, 'apps/wordpress/server.php'), 'utf8');
+assert.match(server, /\$documentRoot = __DIR__ \. '\/web';/);
+assert.match(server, /\$file = \$documentRoot \. \$path;/);
 
 const loader = fs.readFileSync(path.join(root, 'apps/wordpress/web/app/mu-plugins/esctt-content.php'), 'utf8');
 assert.ok(loader.indexOf('secure-custom-fields.php') < loader.indexOf('esctt-content.php'));
