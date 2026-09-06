@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/coverage-bootstrap.php"
          colors="true"
          cacheDirectory=".phpunit.cache"
 >
@@ -10,4 +10,12 @@
             <directory suffix="Test.php">./tests</directory>
         </testsuite>
     </testsuites>
+    <source>
+        <!-- Theme bootstrap glue is exercised by the WordPress integration gate. -->
+        <include>
+            <directory suffix=".php">../../packages/esctt-content</directory>
+            <directory suffix=".php">../../packages/theme/app</directory>
+            <file>../../packages/theme/functions.php</file>
+        </include>
+    </source>
 </phpunit>

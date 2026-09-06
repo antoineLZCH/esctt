@@ -26,4 +26,9 @@ apps/wordpress/web/app/uploads/*
 packages/theme/public/*
 !packages/theme/public/.gitkeep
 
+# Quality reports
+apps/wordpress/build/
+artifacts/
+test-results/
+
 pnpm-debug.log

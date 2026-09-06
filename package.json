@@ -13,7 +13,16 @@
     "dev": "php -S 127.0.0.1:8080 -t apps/wordpress/web apps/wordpress/server.php",
     "check:scaffold": "node scripts/check-scaffold.mjs",
     "check:php": "find apps/wordpress/config apps/wordpress/tests apps/wordpress/web/app/mu-plugins apps/wordpress/web/index.php apps/wordpress/web/wp-config.php packages -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 php -l",
-    "check": "pnpm run check:scaffold && pnpm run check:php && pnpm run theme:build",
-    "test": "pnpm run check && pnpm --filter @esctt/wordpress test"
+    "check:static": "pnpm --filter @esctt/wordpress lint && pnpm --filter @esctt/wordpress analyse",
+    "check": "pnpm run check:scaffold && pnpm run check:php && pnpm run check:static && pnpm run theme:build",
+    "test:js": "node --test --experimental-test-coverage --test-coverage-include='packages/theme/resources/js/*.js' --test-coverage-lines=100 --test-coverage-branches=100 tests/JavaScript/*.test.mjs",
+    "test:coverage": "bash scripts/ci/php-coverage.sh",
+    "test:e2e": "playwright test tests/e2e/public.spec.js",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.js",
+    "test": "pnpm run check && pnpm run test:js && pnpm --filter @esctt/wordpress test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
   }
 }

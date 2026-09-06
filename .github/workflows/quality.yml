@@ -1,0 +1,292 @@
+name: Quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  WP_ENV: testing
+  WP_HOME: http://127.0.0.1:8080
+  WP_SITEURL: http://127.0.0.1:8080/wp
+  DB_NAME: esctt
+  DB_USER: esctt
+  DB_PASSWORD: esctt
+  DB_HOST: 127.0.0.1:3307
+  AUTH_KEY: ci
+  SECURE_AUTH_KEY: ci
+  LOGGED_IN_KEY: ci
+  NONCE_KEY: ci
+  AUTH_SALT: ci
+  SECURE_AUTH_SALT: ci
+  LOGGED_IN_SALT: ci
+  NONCE_SALT: ci
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+      shared: ${{ steps.filter.outputs.shared }}
+      app: ${{ steps.filter.outputs.app }}
+      theme: ${{ steps.filter.outputs.theme }}
+      plugin: ${{ steps.filter.outputs.plugin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - '.github/**'
+              - 'apps/wordpress/**'
+              - 'packages/**'
+              - 'scripts/**'
+              - 'tests/**'
+              - 'playwright.config.js'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'compose.yml'
+            shared:
+              - '.github/**'
+              - 'scripts/**'
+              - 'tests/**'
+              - 'playwright.config.js'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'compose.yml'
+            app:
+              - 'apps/wordpress/**'
+            theme:
+              - 'packages/theme/**'
+            plugin:
+              - 'packages/esctt-content/**'
+
+  php:
+    name: PHP tests and coverage
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.shared == 'true' ||
+       needs.changes.outputs.app == 'true' ||
+       needs.changes.outputs.theme == 'true' ||
+       needs.changes.outputs.plugin == 'true')
+    runs-on: ubuntu-latest
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: esctt
+          MARIADB_USER: esctt
+          MARIADB_PASSWORD: esctt
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -u root -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, mysqli, zip, xdebug
+          coverage: xdebug
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm setup:site
+      - run: bash scripts/ci/provision-wordpress.sh
+      - run: ESCTT_WORDPRESS_TESTS=1 pnpm --filter @esctt/wordpress test
+      - run: pnpm test:coverage
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-coverage
+          path: apps/wordpress/build/coverage
+          if-no-files-found: ignore
+
+  theme:
+    name: Theme gate
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.theme == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:js
+      - run: pnpm theme:build
+
+  plugin:
+    name: Plugin gate
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.plugin == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, mysqli, zip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @esctt/wordpress composer:install
+      - run: pnpm --filter @esctt/esctt-content check
+      - run: pnpm --filter @esctt/wordpress test
+
+  public:
+    name: Public / ${{ matrix.gate }}
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.shared == 'true' ||
+       needs.changes.outputs.app == 'true' ||
+       needs.changes.outputs.theme == 'true' ||
+       needs.changes.outputs.plugin == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [e2e, a11y]
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: esctt
+          MARIADB_USER: esctt
+          MARIADB_PASSWORD: esctt
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -u root -proot --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, mysqli, zip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm setup:site
+      - run: bash scripts/ci/provision-wordpress.sh
+      - run: bash scripts/ci/start-wordpress.sh
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:${{ matrix.gate }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.gate }}
+          path: artifacts/playwright
+          if-no-files-found: ignore
+
+  static:
+    name: Static analysis
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, mysqli, zip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @esctt/wordpress composer:install
+      - run: pnpm check:scaffold
+      - run: pnpm check:php
+      - run: pnpm check:static
+
+  security:
+    name: Security checks
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: composer audit --locked --no-interaction --abandoned=fail
+        working-directory: apps/wordpress
+      - run: pnpm audit --audit-level=high
+      - if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  quality:
+    name: Quality result
+    if: always()
+    needs: [changes, php, theme, plugin, public, static, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require selected gates to pass
+        if: >-
+          needs.changes.result != 'success' ||
+          (needs.changes.outputs.relevant == 'true' &&
+           (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')))
+        run: exit 1
+      - run: echo 'Selected quality gates passed.'

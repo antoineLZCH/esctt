@@ -5,6 +5,8 @@
   "description": "Bedrock WordPress application for ES Colombienne Tennis de table",
   "scripts": {
     "composer:install": "composer install --no-interaction --prefer-dist",
+    "lint": "composer lint",
+    "analyse": "composer analyse",
     "test": "composer test"
   }
 }

@@ -9,7 +9,7 @@ class Comments extends Composer
     /**
      * List of views served by this composer.
      *
-     * @var array
+     * @var string[]
      */
     protected static $views = [
         'partials.comments',

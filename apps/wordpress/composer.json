@@ -48,7 +48,9 @@
   },
   "require-dev": {
     "laravel/pint": "^1.0",
-    "pestphp/pest": "^4.0"
+    "pestphp/pest": "^4.0",
+    "phpstan/phpstan": "^2.1",
+    "szepeviktor/phpstan-wordpress": "^2.0"
   },
   "config": {
     "optimize-autoloader": true,
@@ -85,6 +87,7 @@
   "scripts": {
     "lint": "pint --test",
     "lint:fix": "pint",
+    "analyse": "phpstan analyse --no-progress --memory-limit=1G",
     "test": "pest"
   }
 }
