@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 const requiredFiles = [
   'pnpm-workspace.yaml',
+  'compose.yml',
   'apps/wordpress/package.json',
   'apps/wordpress/server.php',
   'apps/wordpress/composer.json',
@@ -45,6 +46,11 @@ assert.ok(loader.indexOf('secure-custom-fields.php') < loader.indexOf('esctt-con
 
 const lock = readJson('apps/wordpress/composer.lock');
 assert.ok(lock.packages.some(({ name }) => name === 'wpackagist-plugin/secure-custom-fields'));
+
+const compose = fs.readFileSync(path.join(root, 'compose.yml'), 'utf8');
+assert.match(compose, /image: mariadb:11\.4/);
+assert.match(compose, /3307:3306/);
+assert.match(compose, /healthcheck:/);
 
 const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
 assert.match(workspace, /apps\/\*/);

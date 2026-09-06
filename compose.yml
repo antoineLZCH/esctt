@@ -1,0 +1,22 @@
+services:
+  database:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: esctt
+      MARIADB_USER: esctt
+      MARIADB_PASSWORD: esctt
+      MARIADB_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 -u root -p"$${MARIADB_ROOT_PASSWORD}" --silent
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mariadb-data:

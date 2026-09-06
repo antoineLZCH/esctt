@@ -14,26 +14,29 @@ Herd supplies the PHP runtime. The commands below use Composer, pnpm and PHP's
 built-in server, so they do not require a Herd-specific command.
 
 Requirements: Herd with PHP 8.3 or newer selected on `PATH`, Composer 2, Node
-22.12 or newer, pnpm 10, and a local MySQL/MariaDB database.
+22.12 or newer, pnpm 10, and Docker with Compose.
 
 ```sh
-cp apps/wordpress/.env.example apps/wordpress/.env
-# Edit apps/wordpress/.env with the local database credentials.
+test -f apps/wordpress/.env || cp apps/wordpress/.env.example apps/wordpress/.env
+# An existing .env must use esctt/esctt and 127.0.0.1:3307 for the bundled DB.
 pnpm install
+pnpm db:up
 pnpm setup:site
 pnpm dev
 ```
 
 Open <http://127.0.0.1:8080/wp/wp-admin/install.php> to finish the WordPress
-installation. `pnpm setup:site` installs the locked Composer dependencies,
-including Secure Custom Fields, and builds Sage's production assets. The
-must-use loader loads SCF before `esctt-content`; ACF and ACF Pro are not
-dependencies.
+installation. `pnpm db:up` starts the MariaDB container; `pnpm setup:site`
+installs the locked Composer dependencies, including Secure Custom Fields, and
+builds Sage's production assets. The must-use loader loads SCF before
+`esctt-content`; ACF and ACF Pro are not dependencies.
 
 Useful commands:
 
 ```sh
 pnpm theme:dev   # Vite watch mode for Sage
+pnpm db:logs     # MariaDB logs
+pnpm db:down     # stop MariaDB and keep its named volume
 pnpm check       # scaffold checks, PHP syntax checks and a Sage build
 ```
 
