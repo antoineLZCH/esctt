@@ -2,10 +2,14 @@
 
 @section('content')
   @while(have_posts()) @php(the_post())
-    @includeFirst(['partials.content-page', 'partials.content'])
+    @if (is_page('inscriptions'))
+      @include('partials.content-inscriptions')
+    @else
+      @includeFirst(['partials.content-page', 'partials.content'])
 
-    @if (is_front_page())
-      {!! \App\faq_markup(3, 'home') !!}
+      @if (is_front_page())
+        {!! \App\faq_markup(3, 'home') !!}
+      @endif
     @endif
   @endwhile
 @endsection
