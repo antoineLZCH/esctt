@@ -110,7 +110,7 @@ if ((${#privacy_ids[@]} == 0)); then
         --post_status=publish \
         --post_title='Confidentialité' \
         --post_name=confidentialite \
-        --post_content='<p>Politique de confidentialité du club.</p>' \
+        --post_content='Politique de confidentialité du club.' \
         --porcelain)
 else
     privacy_id="${privacy_ids[0]}"
