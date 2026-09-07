@@ -155,6 +155,9 @@ test('published page content is validated at the REST and database seams', funct
         'post_status' => 'publish',
         'post_content' => $valid,
     ]);
+    $partialContent = apply_filters('wp_insert_post_empty_content', true, [
+        'post_type' => 'page',
+    ]);
 
     require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
     require_once ABSPATH . 'wp-admin/includes/screen.php';
@@ -170,7 +173,8 @@ test('published page content is validated at the REST and database seams', funct
         ->and($validContent)->toBeFalse()
         ->and($draftContent)->toBeFalse()
         ->and($postContent)->toBeFalse()
-        ->and($alreadyEmpty)->toBeTrue();
+        ->and($alreadyEmpty)->toBeTrue()
+        ->and($partialContent)->toBeFalse();
 
     $postId = wp_insert_post([
         'post_type' => 'page',

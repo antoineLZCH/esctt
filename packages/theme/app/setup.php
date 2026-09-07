@@ -354,7 +354,11 @@ add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $po
         return $maybeEmpty;
     }
 
-    if (! in_array($postarr['post_status'] ?? '', ['publish', 'future'], true)) {
+    if (! array_key_exists('post_status', $postarr)) {
+        return false;
+    }
+
+    if (! in_array($postarr['post_status'], ['publish', 'future'], true)) {
         return $maybeEmpty;
     }
 
