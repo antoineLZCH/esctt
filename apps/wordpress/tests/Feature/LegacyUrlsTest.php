@@ -20,8 +20,10 @@ function legacy_urls_page(string $title, string $slug, int $parent = 0): int
 
 function legacy_urls_enable_pretty_permalinks(): string
 {
+    global $wp_rewrite;
+
     $previous = (string) get_option('permalink_structure');
-    wp_rewrite()->set_permalink_structure('/%postname%/');
+    $wp_rewrite->set_permalink_structure('/%postname%/');
     flush_rewrite_rules(false);
 
     return $previous;
@@ -29,7 +31,9 @@ function legacy_urls_enable_pretty_permalinks(): string
 
 function legacy_urls_restore_permalinks(string $permalinkStructure): void
 {
-    wp_rewrite()->set_permalink_structure($permalinkStructure);
+    global $wp_rewrite;
+
+    $wp_rewrite->set_permalink_structure($permalinkStructure);
     flush_rewrite_rules(false);
 }
 
