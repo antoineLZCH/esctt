@@ -106,6 +106,16 @@ test('the verified legacy inventory registers only current destinations', functi
                 'target_id' => $privacyPageId,
                 'url' => (string) get_permalink($privacyPageId),
             ]);
+
+        global $wpdb;
+        $wpdb->update($wpdb->posts, ['post_name' => 'inventory-missing'], ['ID' => $privacyPageId]);
+        clean_post_cache($privacyPageId);
+        try {
+            esctt_register_inventoried_redirects();
+        } finally {
+            $wpdb->update($wpdb->posts, ['post_name' => 'confidentialite'], ['ID' => $privacyPageId]);
+            clean_post_cache($privacyPageId);
+        }
     } finally {
         wp_delete_post((int) ($privacyRedirect['post_id'] ?? 0), true);
         if ($ownsPrivacyPage) {
