@@ -4,6 +4,8 @@ function pricing_test_load_wordpress(): void
 {
     putenv('APP_RUNNING_IN_CONSOLE=false');
     require_once dirname(__DIR__, 2) . '/web/wp/wp-load.php';
+    require_once dirname(__DIR__, 4) . '/packages/esctt-content/esctt-content.php';
+    esctt_register_pricing_fields();
 }
 
 /**

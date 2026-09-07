@@ -157,5 +157,5 @@ function esctt_register_pricing_fields(): void
 if (function_exists('acf_add_options_page') && function_exists('acf_add_local_field_group')) {
     esctt_register_pricing_fields();
 } elseif (function_exists('add_action')) {
-    add_action('acf/init', 'esctt_register_pricing_fields');
+    add_action('init', 'esctt_register_pricing_fields', 6);
 }
