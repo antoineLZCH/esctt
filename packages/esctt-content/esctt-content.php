@@ -486,7 +486,7 @@ function esctt_register_important_message(): void
 {
     register_post_type(ESCTT_IMPORTANT_MESSAGE_POST_TYPE, [
         'labels' => [
-            'name' => __('Messages importants', 'esctt-content'),
+            'name' => __('Gestion des alertes', 'esctt-content'),
             'singular_name' => __('Message important', 'esctt-content'),
             'add_new_item' => __('Ajouter un message important', 'esctt-content'),
             'edit_item' => __('Modifier le message important', 'esctt-content'),
@@ -494,7 +494,7 @@ function esctt_register_important_message(): void
             'view_item' => __('Voir le message important', 'esctt-content'),
             'search_items' => __('Rechercher des messages importants', 'esctt-content'),
             'not_found' => __('Aucun message important trouvé.', 'esctt-content'),
-            'menu_name' => __('Messages importants', 'esctt-content'),
+            'menu_name' => __('Alertes', 'esctt-content'),
         ],
         'public' => false,
         'publicly_queryable' => false,
