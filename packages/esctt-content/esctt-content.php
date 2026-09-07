@@ -1821,7 +1821,12 @@ function esctt_save_redirect(int $postId): void
         ? (string) get_permalink($targetId)
         : '';
 
-    if ($source === '' || $targetUrl === '' || $source === esctt_redirect_source_path($targetUrl)) {
+    if (
+        $source === ''
+        || $targetUrl === ''
+        || $source === esctt_redirect_source_path($targetUrl)
+        || esctt_redirect_would_loop($source, $targetId)
+    ) {
         delete_post_meta($postId, ESCTT_REDIRECT_SOURCE_META);
         delete_post_meta($postId, ESCTT_REDIRECT_TARGET_META);
 

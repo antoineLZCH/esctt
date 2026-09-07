@@ -271,6 +271,14 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
 
         $_POST = [
             'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
+            'esctt_redirect_source' => $loopAPath,
+            'esctt_redirect_target' => (string) $loopBId,
+        ];
+        esctt_save_redirect($redirectId);
+        expect(get_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, true))->toBe('');
+
+        $_POST = [
+            'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
             'esctt_redirect_source' => '/manual-source/',
             'esctt_redirect_target' => (string) $targetId,
         ];
