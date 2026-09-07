@@ -1789,9 +1789,11 @@ function esctt_render_redirect_meta_box(WP_Post $post): void
 
 function esctt_can_save_redirect(int $postId): bool
 {
+    /* @codeCoverageIgnoreStart — WordPress short-circuits autosaves and revisions before this callback. */
     if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($postId)) {
         return false;
     }
+    /* @codeCoverageIgnoreEnd */
 
     if (get_post_type($postId) !== ESCTT_REDIRECT_POST_TYPE || ! current_user_can('edit_post', $postId)) {
         return false;

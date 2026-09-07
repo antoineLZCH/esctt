@@ -131,6 +131,13 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         'post_status' => 'draft',
         'post_title' => 'Draft redirect fixture',
     ], true);
+    $ancestorId = legacy_urls_page('Redirect ancestor', 'redirect-ancestor-' . wp_generate_password(6, false, false));
+    $descendantId = legacy_urls_page('Redirect descendant', 'redirect-descendant-' . wp_generate_password(6, false, false), $ancestorId);
+    $cycleAId = legacy_urls_page('Redirect cycle A', 'redirect-cycle-a-' . wp_generate_password(6, false, false));
+    $cycleBId = legacy_urls_page('Redirect cycle B', 'redirect-cycle-b-' . wp_generate_password(6, false, false), $cycleAId);
+    global $wpdb;
+    $wpdb->update($wpdb->posts, ['post_parent' => $cycleBId], ['ID' => $cycleAId]);
+    clean_post_cache($cycleAId);
     $originalPost = $_POST;
     $originalUserId = get_current_user_id();
     wp_set_current_user(1);
@@ -147,17 +154,24 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_redirect_source_path("/null\0path"))->toBe('')
             ->and(esctt_redirect_source_path('relative/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('https://evil.example/path'))->toBe('')
+            ->and(esctt_redirect_path_from_url('https://[invalid'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://user:pass@127.0.0.1/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://127.0.0.1:9999/path'))->toBe('')
             ->and(esctt_page_path(0))->toBe('')
             ->and(esctt_redirect_target_is_valid(0))->toBeFalse()
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
+            ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
+            ->and(esctt_page_is_descendant($cycleAId, $cycleBId))->toBeFalse()
             ->and($metaBox)->toContain('esctt-redirect-source')
             ->and($metaBox)->toContain('esctt-redirect-target');
 
         esctt_upsert_page_redirect('', $targetId);
         esctt_upsert_page_redirect('/invalid-target/', 0);
         esctt_upsert_page_redirect(esctt_page_path($targetId), $targetId);
+        $forceInsertError = static fn () => new WP_Error('forced_redirect_insert_failure');
+        add_filter('pre_wp_insert_post', $forceInsertError);
+        esctt_upsert_page_redirect('/forced-insert-error', $targetId);
+        remove_filter('pre_wp_insert_post', $forceInsertError);
 
         update_post_meta($draftId, ESCTT_REDIRECT_SOURCE_META, '/draft-source');
         update_post_meta($draftId, ESCTT_REDIRECT_TARGET_META, $targetId);
@@ -176,6 +190,15 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
 
         $_POST = [];
         expect(esctt_can_save_redirect($redirectId))->toBeFalse();
+        $_POST = ['esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect')];
+        esctt_save_redirect($redirectId);
+
+        $_POST = [
+            'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
+            'esctt_redirect_source' => '/invalid-target',
+            'esctt_redirect_target' => '0',
+        ];
+        esctt_save_redirect($redirectId);
 
         update_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, '/manual-source');
         update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
@@ -201,6 +224,10 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         wp_delete_post($redirectId, true);
         wp_delete_post($draftId, true);
         wp_delete_post($targetId, true);
+        wp_delete_post($ancestorId, true);
+        wp_delete_post($descendantId, true);
+        wp_delete_post($cycleAId, true);
+        wp_delete_post($cycleBId, true);
         legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
