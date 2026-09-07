@@ -1588,13 +1588,15 @@ function esctt_register_club_menu(): void
     );
 }
 
-add_filter('register_post_type_args', static function (array $args, string $postType): array {
-    if (str_starts_with($postType, 'esctt_') && ($args['show_in_menu'] ?? true) !== false) {
-        $args['show_in_menu'] = ESCTT_CLUB_MENU_SLUG;
-    }
+if (function_exists('add_filter')) {
+    add_filter('register_post_type_args', static function (array $args, string $postType): array {
+        if (str_starts_with($postType, 'esctt_') && ($args['show_in_menu'] ?? true) !== false) {
+            $args['show_in_menu'] = ESCTT_CLUB_MENU_SLUG;
+        }
 
-    return $args;
-}, 10, 2);
+        return $args;
+    }, 10, 2);
+}
 
 if (function_exists('add_action')) {
     add_action('admin_menu', 'esctt_register_club_menu', 9);
