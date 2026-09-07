@@ -72,7 +72,6 @@ test('home and dedicated FAQ views share source rows and native disclosure seman
         $home = \App\faq_markup(1, 'home');
         $homeComplete = \App\faq_markup(3, 'home');
         $full = \App\faq_markup(null, 'page');
-        $default = \App\faq_markup(null, '');
     } finally {
         remove_filter('acf/load_value/name=faq_items', $filter, 99);
     }
@@ -90,8 +89,7 @@ test('home and dedicated FAQ views share source rows and native disclosure seman
         ->and($full)->toContain('aria-controls="faq-page-answer-0"')
         ->and($full)->toContain('role="region"')
         ->and($full)->toContain('<summary id="faq-page-question-0"')
-        ->and($full)->not->toContain('aria-expanded="false"')
-        ->and($default)->toContain('id="faq-faq-heading"');
+        ->and($full)->not->toContain('aria-expanded="false"');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',

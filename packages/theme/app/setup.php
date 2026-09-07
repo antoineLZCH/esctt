@@ -64,7 +64,7 @@ function faq_markup(?int $limit = null, string $context = 'faq'): string
     }
 
     return view('partials.faq', [
-        'context' => sanitize_key($context) ?: 'faq',
+        'context' => sanitize_key($context),
         'items' => $items,
         'showLink' => $limit !== null && count($items) < count($sourceItems),
     ])->render();
