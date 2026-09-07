@@ -83,6 +83,20 @@ summary:focus-visible,
   width: 1px;
 }
 
+.esctt-partners__logo-wrap {
+  max-width: 12rem;
+}
+
+.esctt-partners__logo {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.esctt-partners__description p:last-child {
+  margin-bottom: 0;
+}
+
 .esctt-important-message {
   background: #fef3c7;
   border-block: 2px solid #92400e;

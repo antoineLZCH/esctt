@@ -9,6 +9,20 @@
       }
 
       $url = esctt_sanitize_partner_url((string) get_post_meta($partner->ID, ESCTT_PARTNER_URL_META, true));
+      $description = trim((string) get_post_meta($partner->ID, ESCTT_PARTNER_DESCRIPTION_META, true));
+      $logo = (string) get_the_post_thumbnail($partner->ID, 'medium', [
+          'class' => 'esctt-partners__logo',
+      ]);
+      $details = '';
+
+      if ($logo !== '') {
+          $details .= '<div class="esctt-partners__logo-wrap">' . $logo . '</div>';
+      }
+
+      if ($description !== '') {
+          $details .= '<div class="esctt-partners__description">' . wpautop(wp_kses_post($description)) . '</div>';
+      }
+
       $label = esc_html($name);
 
       if ($url !== '') {
@@ -20,7 +34,7 @@
           );
       }
 
-      $items[] = sprintf('<li>%s</li>', $label);
+      $items[] = sprintf('<li>%s%s</li>', $details, $label);
   }
 
   if ($items === []) {

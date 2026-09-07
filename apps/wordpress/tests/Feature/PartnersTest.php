@@ -44,6 +44,7 @@ test('partners expose an admin-managed ordered WordPress model', function () {
             ->and($postType->show_in_rest)->toBeTrue()
             ->and(post_type_supports(ESCTT_PARTNER_POST_TYPE, 'title'))->toBeTrue()
             ->and(post_type_supports(ESCTT_PARTNER_POST_TYPE, 'page-attributes'))->toBeTrue()
+            ->and(post_type_supports(ESCTT_PARTNER_POST_TYPE, 'thumbnail'))->toBeTrue()
             ->and($partnerId)->toBeInt();
 
         require_once ABSPATH . 'wp-admin/includes/template.php';
@@ -55,6 +56,7 @@ test('partners expose an admin-managed ordered WordPress model', function () {
 
         expect($metaBox)->toContain('esctt_partner_url')
             ->and($metaBox)->toContain('esctt_partner_menu_order')
+            ->and($metaBox)->toContain('esctt_partner_description')
             ->and($metaBox)->toContain('Lien du partenaire')
             ->and(esctt_partner_meta_auth(true, ESCTT_PARTNER_URL_META, $partnerId, $adminId))->toBeTrue()
             ->and(esctt_partner_meta_auth(true, ESCTT_PARTNER_URL_META, $partnerId, 0))->toBeFalse()
@@ -79,11 +81,13 @@ test('partners expose an admin-managed ordered WordPress model', function () {
         $_POST = [
             'esctt_partner_nonce' => wp_create_nonce('esctt_save_partner'),
             'esctt_partner_url' => 'https://partner.example.test/',
+            'esctt_partner_description' => '<strong>Partenaire historique</strong>',
             'esctt_partner_menu_order' => '7',
         ];
         esctt_save_partner($partnerId);
 
         expect(get_post_meta($partnerId, ESCTT_PARTNER_URL_META, true))->toBe('https://partner.example.test/')
+            ->and(get_post_meta($partnerId, ESCTT_PARTNER_DESCRIPTION_META, true))->toBe('<strong>Partenaire historique</strong>')
             ->and(get_post($partnerId)->menu_order)->toBe(7);
 
         $_POST['esctt_partner_url'] = 'javascript:alert(1)';
@@ -155,16 +159,31 @@ test('published partner changes render in order with explicit external behavior'
         'post_title' => '',
         'menu_order' => 15,
     ], true);
+    $logoId = wp_insert_attachment([
+        'post_type' => 'attachment',
+        'post_status' => 'inherit',
+        'post_title' => 'Logo Alpha',
+        'post_mime_type' => 'image/png',
+    ], '', true);
+    $thumbnailFilter = static function ($html, int $postId) use (&$first): string {
+        return $postId === $first
+            ? '<img class="esctt-partners__logo" src="https://example.test/logo.png" alt="Logo Alpha">'
+            : (string) $html;
+    };
 
     try {
         expect($first)->toBeInt()
             ->and($second)->toBeInt()
             ->and($withoutUrl)->toBeInt()
             ->and($emptyName)->toBeInt()
+            ->and($logoId)->toBeInt()
             ->and($allowedBlocks)->toContain('esctt/partners');
 
         update_post_meta($first, ESCTT_PARTNER_URL_META, 'https://alpha.example.test/');
         update_post_meta($second, ESCTT_PARTNER_URL_META, 'https://beta.example.test/');
+        update_post_meta($first, ESCTT_PARTNER_DESCRIPTION_META, 'Une description <strong>publique</strong>.');
+        update_post_meta($first, '_thumbnail_id', $logoId);
+        add_filter('post_thumbnail_html', $thumbnailFilter, 10, 2);
 
         $markup = do_blocks(partners_block());
 
@@ -178,6 +197,9 @@ test('published partner changes render in order with explicit external behavior'
             ->and($markup)->toContain('target="_blank"')
             ->and($markup)->toContain('rel="noopener noreferrer"')
             ->and($markup)->toContain('ouvre dans une nouvelle fenêtre')
+            ->and($markup)->toContain('esctt-partners__logo')
+            ->and($markup)->toContain('alt="Logo Alpha"')
+            ->and($markup)->toContain('Une description <strong>publique</strong>.')
             ->and(strpos($markup, 'Partenaire Beta'))->toBeLessThan(strpos($markup, 'Partenaire Alpha'));
 
         wp_update_post([
@@ -193,6 +215,8 @@ test('published partner changes render in order with explicit external behavior'
             ->and($updatedMarkup)->not->toContain('Partenaire Beta')
             ->and($updatedMarkup)->toContain('Partenaire sans site');
     } finally {
+        remove_filter('post_thumbnail_html', $thumbnailFilter, 10);
+
         if (is_int($first)) {
             wp_delete_post($first, true);
         }
@@ -207,6 +231,10 @@ test('published partner changes render in order with explicit external behavior'
 
         if (is_int($emptyName)) {
             wp_delete_post($emptyName, true);
+        }
+
+        if (is_int($logoId)) {
+            wp_delete_attachment($logoId, true);
         }
     }
 })->skip(

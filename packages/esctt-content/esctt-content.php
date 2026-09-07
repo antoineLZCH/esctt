@@ -17,6 +17,7 @@ defined('ABSPATH') || exit;
 
 const ESCTT_PARTNER_POST_TYPE = 'esctt_partner';
 const ESCTT_PARTNER_URL_META = '_esctt_partner_url';
+const ESCTT_PARTNER_DESCRIPTION_META = '_esctt_partner_description';
 
 function esctt_register_partner(): void
 {
@@ -37,7 +38,7 @@ function esctt_register_partner(): void
         'show_ui' => true,
         'show_in_rest' => true,
         'menu_icon' => 'dashicons-groups',
-        'supports' => ['title', 'page-attributes'],
+        'supports' => ['title', 'page-attributes', 'thumbnail'],
         'rewrite' => false,
         'query_var' => false,
     ]);
@@ -69,6 +70,14 @@ function esctt_register_partner_meta(): void
         'sanitize_callback' => 'esctt_sanitize_partner_url',
         'auth_callback' => 'esctt_partner_meta_auth',
     ]);
+
+    register_post_meta(ESCTT_PARTNER_POST_TYPE, ESCTT_PARTNER_DESCRIPTION_META, [
+        'type' => 'string',
+        'single' => true,
+        'show_in_rest' => true,
+        'sanitize_callback' => 'wp_kses_post',
+        'auth_callback' => 'esctt_partner_meta_auth',
+    ]);
 }
 
 function esctt_register_partner_meta_box(): void
@@ -87,6 +96,7 @@ function esctt_render_partner_meta_box(WP_Post $post): void
 {
     wp_nonce_field('esctt_save_partner', 'esctt_partner_nonce');
     $url = (string) get_post_meta($post->ID, ESCTT_PARTNER_URL_META, true);
+    $description = (string) get_post_meta($post->ID, ESCTT_PARTNER_DESCRIPTION_META, true);
     ?>
     <p>
         <label for="esctt-partner-url"><?php esc_html_e('Lien du partenaire', 'esctt-content'); ?></label>
@@ -95,6 +105,10 @@ function esctt_render_partner_meta_box(WP_Post $post): void
     <p>
         <label for="esctt-partner-menu-order"><?php esc_html_e('Ordre d’affichage', 'esctt-content'); ?></label>
         <input id="esctt-partner-menu-order" name="esctt_partner_menu_order" type="number" value="<?php echo esc_attr((string) $post->menu_order); ?>" class="small-text" min="0" step="1">
+    </p>
+    <p>
+        <label for="esctt-partner-description"><?php esc_html_e('Description', 'esctt-content'); ?></label>
+        <textarea id="esctt-partner-description" name="esctt_partner_description" rows="6" class="large-text"><?php echo esc_textarea($description); ?></textarea>
     </p>
     <p class="description">
         <?php esc_html_e('Les liens partenaires sont ouverts dans une nouvelle fenêtre avec une indication accessible. Les partenaires publiés apparaissent dans le bloc Partenaires.', 'esctt-content'); ?>
@@ -142,6 +156,16 @@ function esctt_save_partner(int $post_id): void
             delete_post_meta($post_id, ESCTT_PARTNER_URL_META);
         } else {
             update_post_meta($post_id, ESCTT_PARTNER_URL_META, $url);
+        }
+
+        $description = isset($_POST['esctt_partner_description']) && is_string($_POST['esctt_partner_description'])
+            ? trim(wp_kses_post(wp_unslash($_POST['esctt_partner_description'])))
+            : '';
+
+        if ($description === '') {
+            delete_post_meta($post_id, ESCTT_PARTNER_DESCRIPTION_META);
+        } else {
+            update_post_meta($post_id, ESCTT_PARTNER_DESCRIPTION_META, $description);
         }
 
         $order = isset($_POST['esctt_partner_menu_order']) && is_scalar($_POST['esctt_partner_menu_order'])
