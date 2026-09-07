@@ -245,6 +245,14 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
             ->and($rendered)->toContain('Télécharger : Règlement intérieur — saison 2026–2027')
             ->and($stepsPosition)->toBeLessThan($helloAssoPosition);
 
+        $composer = new \App\View\Composers\Registration();
+        expect($composer->steps())->toHaveCount(4)
+            ->and($composer->preventionHealth())->toHaveCount(4)
+            ->and($composer->documents())->toHaveCount(1)
+            ->and($composer->documentsPolicy())->toContain('ne collecte ni ne stocke')
+            ->and($composer->hero())->toContain('Inscriptions')
+            ->and($composer->editorContent())->toContain('Finaliser');
+
         $heroOnlyId = wp_insert_post([
             'post_type' => 'page',
             'post_status' => 'publish',
