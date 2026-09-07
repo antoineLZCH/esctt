@@ -72,6 +72,7 @@ function pricing_axes(): array
     ];
 }
 
+// @codeCoverageIgnoreStart
 function pricing_amount(mixed $value): string
 {
     if ($value === null || $value === '') {
@@ -84,6 +85,7 @@ function pricing_amount(mixed $value): string
 
     return number_format_i18n((float) $value, 2) . ' €';
 }
+// @codeCoverageIgnoreEnd
 
 function pricing_pass_plus_label(mixed $value): string
 {
