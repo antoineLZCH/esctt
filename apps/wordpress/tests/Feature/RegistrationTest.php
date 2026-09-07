@@ -242,6 +242,11 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
             ->and($rendered)->toContain('href="https://example.com/reglement.pdf"')
             ->and($rendered)->toContain('Télécharger : Règlement intérieur — saison 2026–2027')
             ->and($stepsPosition)->toBeLessThan($helloAssoPosition);
+
+        $originalContent = $GLOBALS['post']->post_content;
+        $GLOBALS['post']->post_content = '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /-->';
+        expect((new \App\View\Composers\Registration())->editorContent())->toBe('');
+        $GLOBALS['post']->post_content = $originalContent;
     } finally {
         wp_reset_postdata();
         $GLOBALS['post'] = $originalPost;
