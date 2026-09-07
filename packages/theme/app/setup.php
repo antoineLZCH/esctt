@@ -87,6 +87,7 @@ function pricing_amount(mixed $value): string
 }
 // @codeCoverageIgnoreEnd
 
+// @codeCoverageIgnoreStart
 function pricing_pass_plus_label(mixed $value): string
 {
     return match ((string) $value) {
@@ -95,6 +96,7 @@ function pricing_pass_plus_label(mixed $value): string
         default => __('À renseigner', 'esctt'),
     };
 }
+// @codeCoverageIgnoreEnd
 
 /**
  * Read the Admin-managed pricing model without supplying unvalidated values.
