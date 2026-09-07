@@ -219,6 +219,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
     ]);
     $originalPost = $GLOBALS['post'] ?? null;
     $heroOnlyId = 0;
+    $emptyEditorId = 0;
     $GLOBALS['post'] = get_post($postId);
     setup_postdata($GLOBALS['post']);
 
@@ -255,10 +256,21 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
         expect((new \App\View\Composers\Registration())->editorContent())->toBe('');
         wp_reset_postdata();
         $GLOBALS['post'] = $originalPost;
+
+        $emptyEditorId = wp_insert_post([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_title' => 'Inscriptions sans contenu éditeur',
+            'post_content' => '',
+        ]);
+        $GLOBALS['post'] = get_post($emptyEditorId);
+        setup_postdata($GLOBALS['post']);
+        expect((new \App\View\Composers\Registration())->editorContent())->toBe('');
     } finally {
         wp_reset_postdata();
         $GLOBALS['post'] = $originalPost;
         wp_delete_post($heroOnlyId, true);
+        wp_delete_post($emptyEditorId, true);
         wp_delete_post($postId, true);
         wp_delete_post($documentId, true);
     }
