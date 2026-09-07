@@ -35,10 +35,11 @@ done
 cache_dir="$root_dir/apps/wordpress/web/app/cache"
 uploads_dir="$root_dir/apps/wordpress/web/app/uploads"
 mkdir -p "$cache_dir/acorn/framework/cache" "$uploads_dir"
-chmod -R a+rwX "$cache_dir" "$uploads_dir"
 
 wp=(
-    docker run --rm --network host
+    docker run --rm
+    --user "$(id -u):$(id -g)"
+    --network host
     "${docker_env[@]}"
     --volume "$root_dir:/var/www/html"
     --workdir /var/www/html/apps/wordpress
@@ -61,5 +62,3 @@ fi
 
 "${wp[@]}" theme activate esctt --skip-plugins
 "${wp[@]}" plugin activate secure-custom-fields esctt-content --skip-themes
-
-chmod -R a+rwX "$cache_dir" "$uploads_dir"

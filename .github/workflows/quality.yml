@@ -278,11 +278,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" >/dev/null 2>&1; then
+          status="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.security_and_analysis.dependency_graph.status // "disabled"')"
+          if [ "$status" = "enabled" ]; then
             echo 'available=true' >> "$GITHUB_OUTPUT"
           else
             echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo '::warning::Dependency Review skipped because the repository Dependency Graph is unavailable.'
+            echo "::warning::Dependency Review skipped because Dependency Graph status is $status."
           fi
       - if: github.event_name == 'pull_request' && steps.dependency-graph.outputs.available == 'true'
         uses: actions/dependency-review-action@v4
