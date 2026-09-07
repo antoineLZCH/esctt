@@ -156,13 +156,11 @@ test('native page operations cover drafts, previews, publication, navigation and
             'post_content' => $revisedContent,
         ], true))->toBe($pageId);
 
-        $revisionId = 0;
-        foreach (wp_get_post_revisions($pageId) as $revision) {
-            if ($revision->post_content === $revisedContent) {
-                $revisionId = (int) $revision->ID;
-                break;
-            }
-        }
+        $revisions = wp_get_post_revisions($pageId);
+        expect($revisions)->not->toBeEmpty();
+
+        $revisionId = (int) array_key_first($revisions);
+        $revisionContent = $revisions[$revisionId]->post_content;
 
         expect($revisionId)->toBeGreaterThan(0)
             ->and(wp_update_post([
@@ -170,7 +168,7 @@ test('native page operations cover drafts, previews, publication, navigation and
                 'post_content' => $secondRevisionContent,
             ], true))->toBe($pageId)
             ->and(wp_restore_post_revision($revisionId))->toBe($pageId)
-            ->and(get_post_field('post_content', $pageId))->toBe($revisedContent);
+            ->and(get_post_field('post_content', $pageId))->toBe($revisionContent);
     } finally {
         remove_action('esctt_technical_deploy', $deploymentHook);
         wp_set_current_user($originalUserId);
