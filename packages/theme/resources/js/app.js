@@ -5,6 +5,10 @@ export function initializePracticeScheduleComparison(root) {
     const selectedProfile = schedule.querySelector('input[name="esctt-practice-profile"]:checked');
     const statusMessage = schedule.querySelector('[data-profile-selected]');
 
+    if (!selectedProfile || !statusMessage) {
+      return;
+    }
+
     const update = (input) => {
       let matchCount = 0;
 

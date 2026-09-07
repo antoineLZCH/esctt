@@ -1174,6 +1174,34 @@ function esctt_render_practice_schedules_block(): string
         $groups[$slot['day']][] = $slot;
     }
 
+    $slotTimes = static function (array $slot): array {
+        $startMinutes = ((int) substr($slot['start'], 0, 2) * 60) + (int) substr($slot['start'], 3, 2);
+        $endMinutes = ((int) substr($slot['end'], 0, 2) * 60) + (int) substr($slot['end'], 3, 2);
+
+        if ($endMinutes <= $startMinutes) {
+            $endMinutes += 24 * 60;
+        }
+
+        return [$startMinutes, $endMinutes];
+    };
+    $slotLanes = [];
+    $laneCounts = [];
+    foreach ($groups as $day => $daySlots) {
+        $laneEnds = [];
+        foreach ($daySlots as $slotIndex => $slot) {
+            [$startMinutes, $endMinutes] = $slotTimes($slot);
+            $lane = 0;
+            while (isset($laneEnds[$lane]) && $laneEnds[$lane] > $startMinutes) {
+                $lane++;
+            }
+
+            $laneEnds[$lane] = $endMinutes;
+            $slotLanes[$day][$slotIndex] = $lane + 1;
+        }
+
+        $laneCounts[$day] = max(1, count($laneEnds));
+    }
+
     $output = '<section class="esctt-practice-schedules" data-schedule-comparison aria-labelledby="esctt-practice-schedules-title">';
     $output .= '<h2 id="esctt-practice-schedules-title">' . esc_html__('Horaires d’entraînement', 'esctt-content') . '</h2>';
 
@@ -1201,20 +1229,18 @@ function esctt_render_practice_schedules_block(): string
     $output .= '</div>';
 
     foreach (esctt_practice_days() as $day => $dayLabel) {
+        $dayLaneCount = $laneCounts[$day] ?? 1;
         $output .= '<section class="esctt-practice-day" aria-labelledby="esctt-practice-day-' . esc_attr((string) $day) . '">';
-        $output .= '<h3 id="esctt-practice-day-' . esc_attr((string) $day) . '">' . esc_html($dayLabel) . '</h3><ul>';
+        $output .= '<h3 id="esctt-practice-day-' . esc_attr((string) $day) . '">' . esc_html($dayLabel) . '</h3><ul style="--esctt-practice-lanes: ' . esc_attr((string) $dayLaneCount) . ';">';
 
-        foreach ($groups[$day] ?? [] as $slot) {
+        foreach ($groups[$day] ?? [] as $slotIndex => $slot) {
             $slotProfiles = implode(', ', $slot['profiles']);
             $profileSlugs = array_map('sanitize_key', $slot['profile_slugs']);
-            $startMinutes = ((int) substr($slot['start'], 0, 2) * 60) + (int) substr($slot['start'], 3, 2);
-            $endMinutes = ((int) substr($slot['end'], 0, 2) * 60) + (int) substr($slot['end'], 3, 2);
-            if ($endMinutes <= $startMinutes) {
-                $endMinutes += 24 * 60;
-            }
-            $gridRow = 1 + (int) floor($startMinutes / 60);
-            $gridSpan = max(1, (int) ceil(($endMinutes - $startMinutes) / 60));
-            $slotStyle = sprintf('grid-row: %d / span %d;', $gridRow, $gridSpan);
+            [$startMinutes, $endMinutes] = $slotTimes($slot);
+            $gridRow = 1 + intdiv($startMinutes, 15);
+            $gridSpan = max(1, (int) ceil(($endMinutes - $startMinutes) / 15));
+            $gridColumn = $slotLanes[$day][$slotIndex] ?? 1;
+            $slotStyle = sprintf('grid-row: %d / span %d; grid-column: %d;', $gridRow, $gridSpan, $gridColumn);
 
             $output .= '<li class="esctt-practice-slot" data-profile-slugs="' . esc_attr(implode(' ', $profileSlugs)) . '" style="' . esc_attr($slotStyle) . '">';
             $output .= '<span class="esctt-practice-slot__time"><time datetime="' . esc_attr($slot['start']) . '">' . esc_html($slot['start']) . '</time> – <time datetime="' . esc_attr($slot['end']) . '">' . esc_html($slot['end']) . '</time></span>';

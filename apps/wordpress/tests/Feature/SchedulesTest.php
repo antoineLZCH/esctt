@@ -281,11 +281,34 @@ test('published slots render by day and start time with live location and profil
     'Requires the CI WordPress installation.',
 );
 
+test('an empty schedule renders an explicit empty state', function () {
+    schedules_load_wordpress();
+
+    $emptyPracticeSlots = static function (WP_Query $query): void {
+        if ($query->get('post_type') === ESCTT_PRACTICE_SLOT_POST_TYPE) {
+            $query->set('post__in', [0]);
+        }
+    };
+    add_action('pre_get_posts', $emptyPracticeSlots);
+
+    try {
+        $html = esctt_render_practice_schedules_block();
+
+        expect($html)->toContain('Aucun créneau publié pour le moment.');
+    } finally {
+        remove_action('pre_get_posts', $emptyPracticeSlots);
+    }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
 test('the schedule comparison keeps every slot visible with profile status text', function () {
     schedules_load_wordpress();
 
     $locationId = schedules_create_location('Salle comparaison', '3 avenue du Club, Colombes');
     $jeuneSlotId = schedules_create_slot('Créneau jeune', 1, '18:00', '20:00', $locationId, 'jeune');
+    $overlapSlotId = schedules_create_slot('Créneau chevauché', 1, '19:00', '21:00', $locationId, 'adulte-competition');
     $sharedSlotId = schedules_create_slot('Créneau partagé', 2, '20:00', '22:00', $locationId, 'adulte-loisir');
 
     try {
@@ -303,10 +326,13 @@ test('the schedule comparison keeps every slot visible with profile status text'
             ->and($html)->toContain('data-profile-slugs="adulte-loisir"')
             ->and($html)->toContain('Adapté au profil Jeune')
             ->and($html)->toContain('Ce créneau n’est pas adapté au profil Jeune')
-            ->and(substr_count($html, 'class="esctt-practice-slot"'))->toBeGreaterThanOrEqual(2)
-            ->and(substr_count($html, 'class="esctt-practice-day"'))->toBe(7);
+            ->and(substr_count($html, 'class="esctt-practice-slot"'))->toBeGreaterThanOrEqual(3)
+            ->and(substr_count($html, 'class="esctt-practice-day"'))->toBe(7)
+            ->and($html)->toContain('grid-row: 73 / span 8; grid-column: 1;')
+            ->and($html)->toContain('grid-row: 77 / span 8; grid-column: 2;');
     } finally {
         wp_delete_post($jeuneSlotId, true);
+        wp_delete_post($overlapSlotId, true);
         wp_delete_post($sharedSlotId, true);
         wp_delete_post($locationId, true);
     }

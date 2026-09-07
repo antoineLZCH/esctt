@@ -118,6 +118,18 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.equal(slots[1].statuses[1].hidden, false);
     assert.match(selectedMessage.textContent, /Adulte loisir sélectionné : 1 créneaux adaptés/);
 
+    const emptySchedule = {
+        querySelectorAll: () => [],
+        querySelector: () => null,
+    };
+    const scheduleWithoutStatus = {
+        querySelectorAll: (selector) => selector.includes('input') ? inputs : [],
+        querySelector: (selector) => selector.includes(':checked') ? inputs[0] : null,
+    };
+    appModule.initializePracticeScheduleComparison({
+        querySelectorAll: () => [emptySchedule, scheduleWithoutStatus],
+    });
+
     const hero = registeredBlocks.get('esctt/hero');
     assert.ok(hero);
     assert.equal(hero.save(), null);
