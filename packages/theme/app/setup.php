@@ -12,6 +12,8 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/sport-life',
+    'esctt/practice-schedules',
     'core/paragraph',
     'core/heading',
     'core/image',
@@ -34,6 +36,190 @@ function page_block_catalog(): array
 
     return $catalog;
 }
+
+function render_sport_life(array $attributes): string
+{
+    $helloAssoUrl = esc_url_raw((string) array_merge(['helloAssoUrl' => ''], $attributes)['helloAssoUrl']);
+
+    return view('sections.sport-life', [
+        'helloAssoUrl' => $helloAssoUrl,
+        'frontImage' => Vite::asset('resources/images/maillot-face.jpg'),
+        'backImage' => Vite::asset('resources/images/maillot-dos.jpg'),
+    ])->render();
+}
+
+/**
+ * @return array<int, array<string, string>>
+ */
+function pricing_axes(): array
+{
+    return [
+        [
+            'key' => 'colombes_loisir',
+            'location_key' => 'colombes',
+            'location_label' => __('Colombes', 'esctt'),
+            'practice_key' => 'loisir',
+            'practice_label' => __('Loisir', 'esctt'),
+        ],
+        [
+            'key' => 'colombes_competition',
+            'location_key' => 'colombes',
+            'location_label' => __('Colombes', 'esctt'),
+            'practice_key' => 'competition',
+            'practice_label' => __('Compétition', 'esctt'),
+        ],
+        [
+            'key' => 'hors_colombes_loisir',
+            'location_key' => 'hors-colombes',
+            'location_label' => __('Hors Colombes', 'esctt'),
+            'practice_key' => 'loisir',
+            'practice_label' => __('Loisir', 'esctt'),
+        ],
+        [
+            'key' => 'hors_colombes_competition',
+            'location_key' => 'hors-colombes',
+            'location_label' => __('Hors Colombes', 'esctt'),
+            'practice_key' => 'competition',
+            'practice_label' => __('Compétition', 'esctt'),
+        ],
+    ];
+}
+
+// @codeCoverageIgnoreStart
+function pricing_amount(mixed $value): string
+{
+    if ($value === null || $value === '') {
+        return __('Montant à renseigner', 'esctt');
+    }
+
+    if (! is_numeric($value)) {
+        return (string) $value;
+    }
+
+    return number_format_i18n((float) $value, 2) . ' €';
+}
+// @codeCoverageIgnoreEnd
+
+// @codeCoverageIgnoreStart
+function pricing_pass_plus_label(mixed $value): string
+{
+    return match ((string) $value) {
+        'yes' => __('Oui', 'esctt'),
+        'no' => __('Non', 'esctt'),
+        default => __('À renseigner', 'esctt'),
+    };
+}
+// @codeCoverageIgnoreEnd
+
+/**
+ * Read the Admin-managed pricing model without supplying unvalidated values.
+ *
+ * @return array<string, mixed>
+ */
+// @codeCoverageIgnoreStart
+function pricing_model(): array
+{
+    $categories = get_field('tariff_categories', 'option');
+    $profiles = get_field('player_profiles', 'option');
+
+    return [
+        'tariff_categories' => is_array($categories) ? $categories : [],
+        'player_profiles' => is_array($profiles) ? $profiles : [],
+        'jersey_price' => get_field('jersey_price', 'option'),
+        'pass_plus_acceptance' => get_field('pass_plus_acceptance', 'option'),
+    ];
+}
+// @codeCoverageIgnoreEnd
+
+/**
+ * Render the public pricing comparison from an Admin-managed model.
+ *
+ * @param array<string, mixed> $pricing
+ */
+function pricing_matrix(array $pricing): string
+{
+    $categories = $pricing['tariff_categories'] ?? [];
+    $profiles = $pricing['player_profiles'] ?? [];
+    $presentedCategories = [];
+    $presentedProfiles = [];
+
+    foreach ($categories as $category) {
+        $options = [];
+        foreach (pricing_axes() as $axis) {
+            $options[] = [
+                'location_key' => $axis['location_key'],
+                'location_label' => $axis['location_label'],
+                'practice_key' => $axis['practice_key'],
+                'practice_label' => $axis['practice_label'],
+                'amount' => pricing_amount($category[$axis['key']] ?? null),
+            ];
+        }
+
+        $presentedCategories[] = [
+            'label' => (string) ($category['label'] ?? __('Catégorie à renseigner', 'esctt')),
+            'options' => $options,
+        ];
+    }
+
+    foreach ($profiles as $profile) {
+        $label = (string) ($profile['label'] ?? '');
+        if ($label !== '') {
+            $presentedProfiles[] = ['label' => $label];
+        }
+    }
+
+    return view('partials.pricing-matrix', [
+        'pricing' => [
+            'tariff_categories' => $presentedCategories,
+            'player_profiles' => $presentedProfiles,
+            'jersey_price' => pricing_amount($pricing['jersey_price'] ?? null),
+            'pass_plus_acceptance' => pricing_pass_plus_label($pricing['pass_plus_acceptance'] ?? ''),
+        ],
+    ])->render();
+}
+
+/**
+ * Read the single Admin-maintained FAQ source.
+ *
+ * @return array<int, array{question: string, answer: string}>
+ */
+function faq_items(): array
+{
+    // @codeCoverageIgnoreStart
+    if (! function_exists('esctt_faq_items')) {
+        return [];
+    }
+    // @codeCoverageIgnoreEnd
+
+    return \esctt_faq_items();
+}
+
+/**
+ * Render a FAQ view from the same source used by every placement.
+ */
+// @codeCoverageIgnoreStart
+function faq_markup(?int $limit = null, string $context = 'faq'): string
+{
+    $sourceItems = faq_items();
+    $items = $sourceItems;
+
+    if ($limit !== null) {
+        $items = array_slice($items, 0, max(0, $limit));
+    }
+
+    $showLink = false;
+
+    if ($limit !== null) {
+        $showLink = count($items) < count($sourceItems);
+    }
+
+    return view('partials.faq', [
+        'context' => sanitize_key($context),
+        'items' => $items,
+        'showLink' => $showLink,
+    ])->render();
+}
+// @codeCoverageIgnoreEnd
 
 function page_structure_error(string $content): ?WP_Error
 {
@@ -63,6 +249,10 @@ function page_structure_error(string $content): ?WP_Error
     $walk = function (array $nestedBlocks) use (&$walk, &$heroCount, &$h1HeadingCount, $allowedBlocks): ?WP_Error {
         foreach ($nestedBlocks as $block) {
             $name = $block['blockName'] ?? null;
+
+            if (null === $name && '' === trim((string) ($block['innerHTML'] ?? ''))) {
+                continue;
+            }
 
             if (! in_array($name, $allowedBlocks, true)) {
                 return new WP_Error(
@@ -187,14 +377,30 @@ add_action('init', function (): void {
             'reusable' => false,
         ],
     ]);
+
+    register_block_type('esctt/sport-life', [
+        'api_version' => '3',
+        'attributes' => [
+            'helloAssoUrl' => [
+                'type' => 'string',
+                'default' => '',
+            ],
+        ],
+        'render_callback' => __NAMESPACE__ . '\\render_sport_life',
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
 });
 
 add_filter('rest_pre_insert_page', function (object $post) {
-    if (! in_array($post->post_status, ['publish', 'future'], true)) {
+    if (! in_array($post->post_status ?? '', ['publish', 'future'], true)) {
         return $post;
     }
 
-    return page_structure_error((string) $post->post_content) ?? $post;
+    return page_structure_error((string) ($post->post_content ?? '')) ?? $post;
 });
 
 add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $postarr): bool {
@@ -202,7 +408,11 @@ add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $po
         return $maybeEmpty;
     }
 
-    if (! in_array($postarr['post_status'] ?? '', ['publish', 'future'], true)) {
+    if (! array_key_exists('post_status', $postarr)) {
+        return false;
+    }
+
+    if (! in_array($postarr['post_status'], ['publish', 'future'], true)) {
         return $maybeEmpty;
     }
 
@@ -294,6 +504,7 @@ add_action('after_setup_theme', function () {
      */
     register_nav_menus([
         'primary_navigation' => __('Primary Navigation', 'esctt'),
+        'footer_navigation' => __('Footer Navigation', 'esctt'),
     ]);
 
     /**
