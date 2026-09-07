@@ -116,6 +116,96 @@ test('the redirect registry accepts internal paths but never external targets', 
     'Requires the CI WordPress installation.',
 );
 
+test('the redirect registry covers invalid paths, admin fields and redirect edge cases', function () {
+    legacy_urls_load_wordpress();
+
+    $previousPermalinkStructure = legacy_urls_enable_pretty_permalinks();
+    $targetId = legacy_urls_page('Redirect target', 'redirect-target-' . wp_generate_password(6, false, false));
+    $redirectId = wp_insert_post([
+        'post_type' => ESCTT_REDIRECT_POST_TYPE,
+        'post_status' => 'publish',
+        'post_title' => 'Redirect fixture',
+    ], true);
+    $draftId = wp_insert_post([
+        'post_type' => ESCTT_REDIRECT_POST_TYPE,
+        'post_status' => 'draft',
+        'post_title' => 'Draft redirect fixture',
+    ], true);
+    $originalPost = $_POST;
+
+    try {
+        esctt_register_redirect_model();
+        do_action('add_meta_boxes_' . ESCTT_REDIRECT_POST_TYPE);
+
+        ob_start();
+        esctt_render_redirect_meta_box(get_post($redirectId));
+        $metaBox = ob_get_clean();
+
+        expect(esctt_redirect_source_path(''))->toBe('')
+            ->and(esctt_redirect_source_path("/null\0path"))->toBe('')
+            ->and(esctt_redirect_source_path('relative/path'))->toBe('')
+            ->and(esctt_redirect_path_from_url('https://evil.example/path'))->toBe('')
+            ->and(esctt_redirect_path_from_url('http://user:pass@127.0.0.1/path'))->toBe('')
+            ->and(esctt_redirect_path_from_url('http://127.0.0.1:9999/path'))->toBe('')
+            ->and(esctt_page_path(0))->toBe('')
+            ->and(esctt_redirect_target_is_valid(0))->toBeFalse()
+            ->and(esctt_find_legacy_redirect(''))->toBeNull()
+            ->and($metaBox)->toContain('esctt-redirect-source')
+            ->and($metaBox)->toContain('esctt-redirect-target');
+
+        esctt_upsert_page_redirect('', $targetId);
+        esctt_upsert_page_redirect('/invalid-target/', 0);
+        esctt_upsert_page_redirect(esctt_page_path($targetId), $targetId);
+
+        update_post_meta($draftId, ESCTT_REDIRECT_SOURCE_META, '/draft-source');
+        update_post_meta($draftId, ESCTT_REDIRECT_TARGET_META, $targetId);
+        esctt_upsert_page_redirect('/draft-source', $targetId);
+
+        $_POST = [
+            'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
+            'esctt_redirect_source' => '/manual-source/',
+            'esctt_redirect_target' => (string) $targetId,
+        ];
+        expect(esctt_can_save_redirect($redirectId))->toBeTrue();
+        esctt_save_redirect($redirectId);
+
+        expect(get_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, true))->toBe('/manual-source')
+            ->and((int) get_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, true))->toBe($targetId);
+
+        $_POST = [];
+        expect(esctt_can_save_redirect($redirectId))->toBeFalse();
+
+        update_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, '/manual-source');
+        update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
+        $_POST = [
+            'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
+            'esctt_redirect_source' => esctt_page_path($targetId),
+            'esctt_redirect_target' => (string) $targetId,
+        ];
+        esctt_save_redirect($redirectId);
+        expect(get_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, true))->toBe('');
+
+        update_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, '/invalid-target');
+        update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, 0);
+        expect(esctt_find_legacy_redirect('/invalid-target'))->toBeNull();
+
+        update_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, esctt_page_path($targetId));
+        update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
+        expect(esctt_find_legacy_redirect(esctt_page_path($targetId)))->toBeNull()
+            ->and(esctt_redirect_location('/new/?existing=1#fragment', '/old/?utm_source=legacy'))->toBe('/new/?existing=1&utm_source=legacy#fragment');
+    } finally {
+        $_POST = $originalPost;
+        wp_delete_post($redirectId, true);
+        wp_delete_post($draftId, true);
+        wp_delete_post($targetId, true);
+        legacy_urls_restore_permalinks($previousPermalinkStructure);
+    }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
+
 test('successive page slug changes resolve every old URL to the current page', function () {
     legacy_urls_load_wordpress();
 
