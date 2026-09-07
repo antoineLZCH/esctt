@@ -353,11 +353,13 @@ function esctt_practice_slot_is_valid(int $slot_id): bool
         && count(array_intersect(array_keys(esctt_player_profiles()), $profiles)) > 0;
 }
 
-function esctt_demote_invalid_practice_slot(WP_Post $post): void
+function esctt_demote_invalid_practice_slot(int $post_id): void
 {
     static $updating = false;
+    $post = get_post($post_id);
 
-    if ($post->post_type !== ESCTT_PRACTICE_SLOT_POST_TYPE
+    if (! $post instanceof WP_Post
+        || $post->post_type !== ESCTT_PRACTICE_SLOT_POST_TYPE
         || $updating
         || ! in_array($post->post_status, ['publish', 'future'], true)
         || esctt_practice_slot_is_valid($post->ID)) {
