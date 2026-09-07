@@ -51,12 +51,16 @@ test('the sport life CTA is absent until an external HelloAsso URL is configured
     $sameSiteUrl = do_blocks(sport_life_block(['helloAssoUrl' => home_url('/inscriptions')]));
     $otherDomainUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://example.com/tournoi']));
     $missingHostUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https:/tournoi']));
+    $protocolRelativeUrl = do_blocks(sport_life_block(['helloAssoUrl' => '//helloasso.com/tournoi']));
+    $unsupportedSchemeUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'ftp://helloasso.com/tournoi']));
     $rootHelloAssoUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://helloasso.com/tournoi']));
 
     expect($withoutUrl)->not->toContain('esctt-sport-life__cta')
         ->and($sameSiteUrl)->not->toContain('esctt-sport-life__cta')
         ->and($otherDomainUrl)->not->toContain('esctt-sport-life__cta')
         ->and($missingHostUrl)->not->toContain('esctt-sport-life__cta')
+        ->and($protocolRelativeUrl)->not->toContain('esctt-sport-life__cta')
+        ->and($unsupportedSchemeUrl)->not->toContain('esctt-sport-life__cta')
         ->and($rootHelloAssoUrl)->toContain('esctt-sport-life__cta');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
