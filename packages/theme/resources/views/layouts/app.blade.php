@@ -15,9 +15,17 @@
     @include('partials.important-message')
 
     <div id="app">
+      <nav class="skip-links" aria-label="Skip links">
+        <a class="skip-link" href="#main">Skip to content</a>
+        @if (is_front_page())
+          <a class="skip-link" href="#horaires">Skip to schedules</a>
+          <a class="skip-link" href="#tarifs">Skip to pricing</a>
+        @endif
+      </nav>
+
       @include('sections.header')
 
-      <main id="main" class="main">
+      <main id="main" class="main" tabindex="-1">
         @yield('content')
       </main>
 
