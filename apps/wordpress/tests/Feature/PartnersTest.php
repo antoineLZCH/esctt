@@ -5,9 +5,6 @@ function partners_load_wordpress(): void
     putenv('APP_RUNNING_IN_CONSOLE=false');
     require_once dirname(__DIR__, 2) . '/web/wp/wp-load.php';
 
-    if (! defined('DOING_AUTOSAVE')) {
-        define('DOING_AUTOSAVE', false);
-    }
 }
 
 function partners_block(): string
