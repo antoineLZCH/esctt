@@ -56,7 +56,11 @@ test('the HelloAsso block accepts only membership URLs and derives the widget UR
         ->and(\App\helloasso_membership_url('javascript:alert(1)'))->toBeNull()
         ->and(\App\helloasso_membership_url('http://'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://[invalid'))->toBeNull()
+        ->and(\App\helloasso_membership_url('https://www.helloasso.com'))->toBeNull()
+        ->and(\App\helloasso_membership_url('https:///associations/example/adhesions/adhesion-2026'))->toBeNull()
+        ->and(\App\helloasso_membership_url('//www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_widget_url('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026?source=site'))->toBe('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026/widget?source=site')
+        ->and(do_blocks(helloasso_block()))->not->toContain('esctt-helloasso__fallback')
         ->and(do_blocks(helloasso_block(['helloAssoUrl' => 'https://example.com/adhesion'])))->not->toContain('esctt-helloasso__fallback');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
