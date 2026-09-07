@@ -117,10 +117,12 @@ add_filter('register_post_type_args', function (array $args, string $postType): 
         return $args;
     }
 
-    $args['supports'] = array_values(array_unique(array_merge(
-        ['page-attributes', 'revisions'],
-        (array) ($args['supports'] ?? []),
-    )));
+    $args['supports'] = (array) ($args['supports'] ?? []);
+    foreach (['page-attributes', 'revisions'] as $support) {
+        if (! array_key_exists($support, $args['supports']) && ! in_array($support, $args['supports'], true)) {
+            $args['supports'][] = $support;
+        }
+    }
     $args['show_in_nav_menus'] = true;
     $args['template'] = [
         [

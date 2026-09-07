@@ -100,7 +100,7 @@ test('native page operations cover drafts, previews, publication, navigation and
     };
     $originalContent = editorial_frame_hero(['title' => 'Page éditoriale']);
     $revisedContent = editorial_frame_hero(['title' => 'Version publiée']);
-    $slug = 'page-editoriale-' . wp_generate_password(8, false, false);
+    $slug = 'page-editoriale-' . strtolower(wp_generate_password(8, false, false));
 
     try {
         wp_set_current_user((int) ($userIds[0] ?? 0));
