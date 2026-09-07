@@ -31,8 +31,8 @@ test('pricing fields keep tariff categories separate from player profiles', func
     $categoryFields = acf_get_fields($categories);
     $profileFields = acf_get_fields($profiles);
     $optionsPages = array_values(array_filter(
-        acf_get_options_pages(),
-        static fn (array $page): bool => ($page['menu_slug'] ?? '') === 'esctt-pricing',
+        acf_get_options_pages() ?: [],
+        static fn(array $page): bool => ($page['menu_slug'] ?? '') === 'esctt-pricing',
     ));
 
     expect($group['location'][0][0]['value'])->toBe('esctt-pricing')
@@ -50,7 +50,7 @@ test('pricing fields keep tariff categories separate from player profiles', func
         ->and(wp_list_pluck($categoryFields, 'name'))->not->toContain('player_profile')
         ->and(wp_list_pluck($profileFields, 'name'))->toContain('label');
 })->skip(
-    fn () => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
 
@@ -86,6 +86,6 @@ test('public pricing rendering keeps every axis and supplementary value visible'
         ->and($html)->toContain('Adulte loisir')
         ->and(substr_count($html, 'data-pricing-option'))->toBe(4);
 })->skip(
-    fn () => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
