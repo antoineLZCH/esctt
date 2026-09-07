@@ -108,4 +108,27 @@ domReady(() => {
     ),
     save: () => null,
   });
+
+  blocks.registerBlockType('esctt/practice-schedules', {
+    apiVersion: 3,
+    title: __('Horaires de pratique', 'esctt'),
+    description: __('Les créneaux publiés regroupés par jour.', 'esctt'),
+    icon: 'calendar-alt',
+    category: 'design',
+    supports: {
+      html: false,
+      multiple: false,
+      reusable: false,
+    },
+    edit: () => {
+      const blockProps = useBlockProps({ className: 'esctt-practice-schedules' });
+
+      return createElement(
+        'section',
+        blockProps,
+        createElement('p', null, __('Les horaires sont gérés dans Créneaux.', 'esctt')),
+      );
+    },
+    save: () => null,
+  });
 });
