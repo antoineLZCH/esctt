@@ -11,7 +11,7 @@ function registration_test_save_document(int $postId, string $url, string $seaso
     $_POST['esctt_registration_document_nonce'] = wp_create_nonce('esctt_registration_document');
     $_POST['esctt_registration_document_url'] = $url;
     $_POST['esctt_registration_document_season'] = $season;
-    do_action('save_post_esctt_registration_document', $postId, get_post($postId), false);
+    do_action('save_post_esctt_reg_document', $postId, get_post($postId), false);
     unset(
         $_POST['esctt_registration_document_nonce'],
         $_POST['esctt_registration_document_url'],
@@ -22,7 +22,7 @@ function registration_test_save_document(int $postId, string $url, string $seaso
 function registration_test_trigger_save(int $postId, array $fields): void
 {
     $_POST = array_merge($_POST, $fields);
-    do_action('save_post_esctt_registration_document', $postId, get_post($postId), false);
+    do_action('save_post_esctt_reg_document', $postId, get_post($postId), false);
     unset(
         $_POST['esctt_registration_document_nonce'],
         $_POST['esctt_registration_document_url'],
@@ -33,8 +33,8 @@ function registration_test_trigger_save(int $postId, array $fields): void
 test('registration documents have an admin-managed model and a non-collection policy', function () {
     registration_test_load_wordpress();
 
-    $postType = get_post_type_object('esctt_registration_document');
-    $registeredMeta = get_registered_meta_keys('post', 'esctt_registration_document');
+    $postType = get_post_type_object('esctt_reg_document');
+    $registeredMeta = get_registered_meta_keys('post', 'esctt_reg_document');
     $meta = array_keys($registeredMeta);
 
     expect($postType)->not->toBeNull()
@@ -55,7 +55,7 @@ test('registration documents have an admin-managed model and a non-collection po
         ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeFalse();
     wp_set_current_user(1);
 
-    do_action('add_meta_boxes', 'esctt_registration_document', new WP_Post((object) ['ID' => 1]));
+    do_action('add_meta_boxes', 'esctt_reg_document', new WP_Post((object) ['ID' => 1]));
     ob_start();
     esctt_render_registration_document_meta_box(new WP_Post((object) ['ID' => 1]));
     $metaBox = ob_get_clean();
@@ -80,7 +80,7 @@ test('published season documents are ordered, named and downloadable', function 
 
     foreach ($documents as $document) {
         $postId = wp_insert_post([
-            'post_type' => 'esctt_registration_document',
+            'post_type' => 'esctt_reg_document',
             'post_status' => 'publish',
             'post_title' => $document['title'],
             'menu_order' => $document['order'],
@@ -90,28 +90,28 @@ test('published season documents are ordered, named and downloadable', function 
     }
 
     $emptyTitleId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'publish',
         'post_title' => '',
     ]);
     registration_test_save_document($emptyTitleId, 'https://club.example/unnamed.pdf', '2026–2027');
 
     $emptyUrlId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'publish',
         'post_title' => 'Document sans fichier',
     ]);
     registration_test_save_document($emptyUrlId, '', '2026–2027');
 
     $invalidUrlId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'publish',
         'post_title' => 'URL non valide',
     ]);
     registration_test_save_document($invalidUrlId, 'javascript:alert(1)', '2026–2027');
 
     $draftId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'draft',
         'post_title' => 'Brouillon',
     ]);
@@ -142,7 +142,7 @@ test('registration document saves sanitize input and ignore unsafe save contexts
     registration_test_load_wordpress();
     wp_set_current_user(1);
     $postId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'draft',
         'post_title' => 'Document administré',
     ]);
@@ -202,7 +202,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
 
     wp_set_current_user(1);
     $documentId = wp_insert_post([
-        'post_type' => 'esctt_registration_document',
+        'post_type' => 'esctt_reg_document',
         'post_status' => 'publish',
         'post_title' => 'Règlement intérieur — saison 2026–2027',
     ]);
