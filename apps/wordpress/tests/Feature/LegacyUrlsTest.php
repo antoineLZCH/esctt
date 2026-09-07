@@ -163,6 +163,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
     global $wpdb;
     $wpdb->update($wpdb->posts, ['post_parent' => $cycleBId], ['ID' => $cycleAId]);
     clean_post_cache($cycleAId);
+    $draftPageId = 0;
     $originalPost = $_POST;
     $originalUserId = get_current_user_id();
     wp_set_current_user(1);
@@ -206,6 +207,24 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         }
         esctt_capture_page_redirects($redirectId, []);
         esctt_store_page_redirects($targetId, $targetPage);
+        $GLOBALS['esctt_page_redirect_snapshot'][$targetId] = [$targetId => esctt_page_path($targetId)];
+        esctt_store_page_redirects($targetId, $targetPage);
+        $GLOBALS['esctt_page_redirect_snapshot'][$targetId] = [$targetId => '/unchanged-source'];
+        $redirectPost = get_post($redirectId);
+        if (! $redirectPost instanceof WP_Post) {
+            throw new RuntimeException('Unable to load redirect fixture.');
+        }
+        esctt_store_page_redirects($targetId, $redirectPost);
+        $draftPageId = legacy_urls_page('Redirect draft page', 'redirect-draft-' . wp_generate_password(6, false, false));
+        wp_update_post(['ID' => $draftPageId, 'post_status' => 'draft']);
+        $draftPage = get_post($draftPageId);
+        if (! $draftPage instanceof WP_Post) {
+            throw new RuntimeException('Unable to load draft redirect fixture.');
+        }
+        $GLOBALS['esctt_page_redirect_snapshot'][$draftPageId] = [$draftPageId => '/draft-page'];
+        esctt_store_page_redirects($draftPageId, $draftPage);
+        $GLOBALS['esctt_page_redirect_snapshot'][999999] = [999999 => '/missing-page'];
+        esctt_store_page_redirects(999999, $targetPage);
         $_POST = [];
         expect(esctt_can_save_redirect($targetId))->toBeFalse();
         $_POST = ['esctt_redirect_nonce' => 'invalid'];
@@ -276,6 +295,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         wp_delete_post($cycleAId, true);
         wp_delete_post($cycleBId, true);
         wp_delete_post($revisionId, true);
+        wp_delete_post($draftPageId, true);
         wp_delete_post((int) ($loopBRedirect['post_id'] ?? 0), true);
         wp_delete_post($loopARedirectId, true);
         wp_delete_post($loopAId, true);
