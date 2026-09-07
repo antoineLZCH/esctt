@@ -124,6 +124,13 @@ function esctt_register_registration_document_model(): void
  */
 function esctt_content_bootstrap(): void
 {
+    static $bootstrapped = false;
+
+    if ($bootstrapped) {
+        return;
+    }
+
+    $bootstrapped = true;
     add_action('init', 'esctt_register_registration_document_model');
     add_action('add_meta_boxes', function (): void {
         add_meta_box(
@@ -190,4 +197,8 @@ function esctt_save_registration_document(int $postId, WP_Post $post): void
 
     update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_URL_META, $url);
     update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, $season);
+}
+
+if (function_exists('add_action')) {
+    esctt_content_bootstrap();
 }
