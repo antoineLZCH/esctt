@@ -4,6 +4,7 @@ function important_message_load_wordpress(): void
 {
     putenv('APP_RUNNING_IN_CONSOLE=false');
     require_once dirname(__DIR__, 2) . '/web/wp/wp-load.php';
+    require_once ABSPATH . 'wp-admin/includes/template.php';
 }
 
 function important_message_admin_id(): int
