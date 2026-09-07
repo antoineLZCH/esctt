@@ -116,6 +116,12 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
         'jersey_price' => null,
         'pass_plus_acceptance' => '',
     ]);
+    $priced = \App\pricing_matrix([
+        'tariff_categories' => [],
+        'player_profiles' => [],
+        'jersey_price' => 75,
+        'pass_plus_acceptance' => 'yes',
+    ]);
 
     update_field('tariff_categories', [['label' => 'Configured category']], 'option');
     update_field('player_profiles', [['label' => 'Configured profile']], 'option');
@@ -132,6 +138,8 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
         ->and($empty)->toContain('Ajoutez une catégorie tarifaire')
         ->and($missing)->toContain('Ajoutez une catégorie tarifaire')
         ->and($partial)->toContain('Montant à renseigner')
+        ->and($priced)->toContain('75')
+        ->and($priced)->toContain('Oui')
         ->and($invalid)->toContain('Ajoutez une catégorie tarifaire');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
