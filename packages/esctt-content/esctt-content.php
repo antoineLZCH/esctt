@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
+const ESCTT_CLUB_MENU_SLUG = 'esctt-club';
 const ESCTT_PARTNER_POST_TYPE = 'esctt_partner';
 const ESCTT_PARTNER_URL_META = '_esctt_partner_url';
 const ESCTT_PARTNER_DESCRIPTION_META = '_esctt_partner_description';
@@ -564,12 +565,24 @@ function esctt_register_content_model(): void
         ],
         'public' => false,
         'show_ui' => true,
+        'show_in_menu' => false,
         'show_in_rest' => true,
         'show_admin_column' => true,
         'hierarchical' => true,
         'rewrite' => false,
         'query_var' => false,
     ]);
+}
+
+function esctt_register_club_taxonomy_menu(): void
+{
+    add_submenu_page(
+        ESCTT_CLUB_MENU_SLUG,
+        __('Profils de joueur', 'esctt-content'),
+        __('Profils de joueur', 'esctt-content'),
+        'manage_categories',
+        'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE,
+    );
 }
 
 function esctt_seed_player_profiles(): void
@@ -1072,6 +1085,7 @@ function esctt_register_pricing_fields(): void
         'menu_title' => __('Tarifs', 'esctt-content'),
         'menu_slug' => 'esctt-pricing',
         'capability' => 'manage_options',
+        'parent_slug' => ESCTT_CLUB_MENU_SLUG,
         'redirect' => false,
         'icon_url' => 'dashicons-money-alt',
         'position' => 30
@@ -1148,6 +1162,7 @@ function esctt_register_faq_fields(): void
         'menu_title' => __('FAQ', 'esctt-content'),
         'menu_slug' => 'esctt-faq',
         'capability' => 'manage_options',
+        'parent_slug' => ESCTT_CLUB_MENU_SLUG,
         'redirect' => false,
         'icon_url' => 'dashicons-testimonial',
         'position' => 30
@@ -1222,6 +1237,42 @@ if (function_exists('add_action')) {
 }
 // @codeCoverageIgnoreEnd
 
+function esctt_render_club_menu(): void
+{
+    if (! current_user_can('edit_posts')) {
+        return;
+    }
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e('Club', 'esctt-content'); ?></h1>
+        <p><?php esc_html_e('Gérez les contenus du club depuis le sous-menu.', 'esctt-content'); ?></p>
+    </div>
+    <?php
+}
+
+function esctt_register_club_menu(): void
+{
+    add_menu_page(
+        __('Club', 'esctt-content'),
+        __('Club', 'esctt-content'),
+        'edit_posts',
+        ESCTT_CLUB_MENU_SLUG,
+        'esctt_render_club_menu',
+        'dashicons-groups',
+        30,
+    );
+}
+
+add_filter('register_post_type_args', static function (array $args, string $postType): array {
+    if (str_starts_with($postType, 'esctt_') && ($args['show_in_menu'] ?? true) !== false) {
+        $args['show_in_menu'] = ESCTT_CLUB_MENU_SLUG;
+    }
+
+    return $args;
+}, 10, 2);
+
+add_action('admin_menu', 'esctt_register_club_menu', 9);
+add_action('admin_menu', 'esctt_register_club_taxonomy_menu', 15);
 add_action('init', 'esctt_register_partner', 5);
 add_action('init', 'esctt_register_partner_meta', 6);
 add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
