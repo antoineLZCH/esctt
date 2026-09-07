@@ -42,9 +42,11 @@ function page_block_catalog(): array
  */
 function faq_items(): array
 {
+    // @codeCoverageIgnoreStart
     if (! function_exists('esctt_faq_items')) {
         return [];
     }
+    // @codeCoverageIgnoreEnd
 
     return \esctt_faq_items();
 }

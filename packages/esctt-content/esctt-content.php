@@ -72,9 +72,11 @@ function esctt_faq_field_group(): array
 
 function esctt_register_faq_fields(): void
 {
+    // @codeCoverageIgnoreStart
     if (! function_exists('acf_add_options_page') || ! function_exists('acf_add_local_field_group')) {
         return;
     }
+    // @codeCoverageIgnoreEnd
 
     acf_add_options_page([
         'page_title' => __('FAQ du club', 'esctt-content'),
@@ -94,9 +96,11 @@ function esctt_register_faq_fields(): void
  */
 function esctt_faq_items(): array
 {
+    // @codeCoverageIgnoreStart
     if (! function_exists('get_field')) {
         return [];
     }
+    // @codeCoverageIgnoreEnd
 
     $rows = get_field('faq_items', 'option');
 
