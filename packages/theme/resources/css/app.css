@@ -10,3 +10,36 @@
 .esctt-hero--compact {
   padding-block: 1.5rem;
 }
+
+.esctt-registration__sections {
+  display: grid;
+  gap: 3rem;
+  margin-inline: auto;
+  max-width: 48rem;
+  padding: 3rem 1.5rem;
+}
+
+.esctt-registration__sections ol,
+.esctt-registration__sections ul {
+  display: grid;
+  gap: 1.5rem;
+  padding-inline-start: 1.5rem;
+}
+
+.esctt-registration__sections h3 {
+  margin-block: 0 0.5rem;
+}
+
+.esctt-registration__sections p {
+  margin-block: 0.5rem 0;
+}
+
+.registration-policy {
+  font-weight: 600;
+}
+
+.esctt-registration__editor-content {
+  margin-inline: auto;
+  max-width: 48rem;
+  padding: 0 1.5rem 3rem;
+}
