@@ -10,3 +10,33 @@
 .esctt-hero--compact {
   padding-block: 1.5rem;
 }
+
+.esctt-practice-schedules {
+  padding: 1.5rem;
+}
+
+.esctt-practice-day + .esctt-practice-day {
+  margin-top: 1.5rem;
+}
+
+.esctt-practice-slot {
+  display: grid;
+  gap: 0.25rem 0.75rem;
+  grid-template-columns: auto 1fr;
+  margin-block: 0.75rem;
+}
+
+.esctt-practice-slot > time {
+  grid-column: 1;
+}
+
+.esctt-practice-slot > strong,
+.esctt-practice-slot > .esctt-practice-profiles,
+.esctt-practice-slot > .esctt-practice-location {
+  grid-column: 2;
+}
+
+.esctt-practice-profiles,
+.esctt-practice-location {
+  font-size: 0.95em;
+}
