@@ -82,6 +82,7 @@ test('admins can edit and inspect location and slot fields', function () {
         'role' => 'administrator',
         'number' => 1,
     ])[0] ?? null;
+    $previousUserId = get_current_user_id();
     wp_set_current_user($admin->ID);
     $previousPost = $_POST;
     $locationId = wp_insert_post([
@@ -160,8 +161,32 @@ test('admins can edit and inspect location and slot fields', function () {
             'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
         ];
         esctt_save_practice_slot($slotId);
+
+        wp_set_current_user(0);
+        $_POST = [
+            'esctt_location_nonce' => wp_create_nonce('esctt_save_location'),
+            'esctt_location_address' => 'Unauthorized address',
+        ];
+        esctt_save_location($locationId);
+        wp_set_current_user($admin->ID);
+
+        $revisionId = wp_insert_post([
+            'post_type' => 'revision',
+            'post_status' => 'inherit',
+            'post_parent' => $locationId,
+            'post_title' => 'Location revision',
+        ]);
+        $_POST = [
+            'esctt_location_nonce' => wp_create_nonce('esctt_save_location'),
+            'esctt_location_address' => 'Revision address',
+        ];
+        esctt_save_location($revisionId);
     } finally {
+        wp_set_current_user($previousUserId);
         $_POST = $previousPost;
+        if (! empty($revisionId)) {
+            wp_delete_post($revisionId, true);
+        }
         wp_delete_post($slotId, true);
         wp_delete_post($locationId, true);
     }
