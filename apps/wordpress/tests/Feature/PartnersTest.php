@@ -45,7 +45,7 @@ test('partners expose an admin-managed ordered WordPress model', function () {
             ->and(post_type_supports(ESCTT_PARTNER_POST_TYPE, 'page-attributes'))->toBeTrue()
             ->and($partnerId)->toBeInt();
 
-        do_action('add_meta_boxes', ESCTT_PARTNER_POST_TYPE, get_post($partnerId));
+        do_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, get_post($partnerId));
 
         ob_start();
         esctt_render_partner_meta_box(get_post($partnerId));
@@ -90,12 +90,13 @@ test('partners expose an admin-managed ordered WordPress model', function () {
 
         $_POST = [
             'esctt_partner_nonce' => wp_create_nonce('esctt_save_partner'),
-            'esctt_partner_url' => 'https://partner.example.test/',
+            'esctt_partner_url' => ['invalid'],
             'esctt_partner_menu_order' => ['invalid'],
         ];
         esctt_save_partner($partnerId);
 
-        expect(get_post($partnerId)->menu_order)->toBe(0);
+        expect(get_post_meta($partnerId, ESCTT_PARTNER_URL_META, true))->toBe('')
+            ->and(get_post($partnerId)->menu_order)->toBe(0);
 
         $revisionId = wp_insert_post([
             'post_type' => 'revision',
