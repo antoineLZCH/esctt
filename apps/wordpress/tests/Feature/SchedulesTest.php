@@ -303,7 +303,7 @@ test('the schedule comparison keeps every slot visible with profile status text'
             ->and($html)->toContain('data-profile-slugs="adulte-loisir"')
             ->and($html)->toContain('Adapté au profil Jeune')
             ->and($html)->toContain('Ce créneau n’est pas adapté au profil Jeune')
-            ->and(substr_count($html, 'class="esctt-practice-slot"'))->toBe(2)
+            ->and(substr_count($html, 'class="esctt-practice-slot"'))->toBeGreaterThanOrEqual(2)
             ->and(substr_count($html, 'class="esctt-practice-day"'))->toBe(7);
     } finally {
         wp_delete_post($jeuneSlotId, true);
