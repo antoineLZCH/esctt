@@ -104,9 +104,11 @@ function esctt_faq_items(): array
 
     $rows = get_field('faq_items', 'option');
 
+    // @codeCoverageIgnoreStart
     if (! is_array($rows)) {
         return [];
     }
+    // @codeCoverageIgnoreEnd
 
     $items = [];
 

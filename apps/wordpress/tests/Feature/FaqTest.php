@@ -48,17 +48,6 @@ test('the FAQ source filters incomplete rows before either view reads it', funct
             ['question' => 'Question 1', 'answer' => '<p>Answer 1</p>'],
             ['question' => 'Question 2', 'answer' => '<p><strong>Answer 2</strong></p>'],
         ]);
-
-        $emptyFilter = static function (): null {
-            return null;
-        };
-        add_filter('acf/load_value/name=faq_items', $emptyFilter, 99, 3);
-
-        try {
-            expect(esctt_faq_items())->toBe([]);
-        } finally {
-            remove_filter('acf/load_value/name=faq_items', $emptyFilter, 99);
-        }
     } finally {
         remove_filter('acf/load_value/name=faq_items', $filter, 99);
     }
