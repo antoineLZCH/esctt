@@ -18,6 +18,7 @@ test('the public home page is served by WordPress', async ({ page }) => {
 test('legacy page URLs redirect permanently to their current native pages', async ({ request, baseURL }) => {
     const cases = [
         { source: '/accueil/?utm_source=legacy', destination: '/' },
+        { source: '/politique-de-confidentialite/?utm_source=legacy', destination: '/confidentialite/' },
     ];
 
     for (const { source, destination } of cases) {
