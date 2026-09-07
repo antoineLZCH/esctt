@@ -14,7 +14,8 @@ test('content plugin bootstrap is loadable', function () {
         ->and(function_exists('esctt_register_content_model'))->toBeTrue()
         ->and(function_exists('esctt_pricing_field_group'))->toBeTrue()
         ->and(function_exists('esctt_register_important_message'))->toBeTrue()
-        ->and(function_exists('esctt_register_partner'))->toBeTrue();
+        ->and(function_exists('esctt_register_partner'))->toBeTrue()
+        ->and(esctt_can_save_content_post(0, 'nonce', 'action'))->toBeFalse();
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
