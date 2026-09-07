@@ -56,6 +56,7 @@ test('registration documents have an admin-managed model and a non-collection po
         ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeFalse();
     wp_set_current_user(1);
 
+    require_once ABSPATH . 'wp-admin/includes/template.php';
     do_action('add_meta_boxes', 'esctt_reg_document', new WP_Post((object) ['ID' => 1]));
     ob_start();
     esctt_render_registration_document_meta_box(new WP_Post((object) ['ID' => 1]));
@@ -74,8 +75,8 @@ test('published season documents are ordered, named and downloadable', function 
     wp_set_current_user(1);
 
     $documents = [
-        ['title' => 'Certificat médical — saison 2026–2027', 'order' => 2, 'url' => 'https://club.example/certificat.pdf'],
-        ['title' => 'Règlement intérieur — saison 2026–2027', 'order' => 1, 'url' => 'https://club.example/reglement.pdf'],
+        ['title' => 'Certificat médical — saison 2026–2027', 'order' => 2, 'url' => 'https://example.com/certificat.pdf'],
+        ['title' => 'Règlement intérieur — saison 2026–2027', 'order' => 1, 'url' => 'https://example.com/reglement.pdf'],
     ];
     $postIds = [];
 
@@ -95,7 +96,7 @@ test('published season documents are ordered, named and downloadable', function 
         'post_status' => 'publish',
         'post_title' => '',
     ]);
-    registration_test_save_document($emptyTitleId, 'https://club.example/unnamed.pdf', '2026–2027');
+    registration_test_save_document($emptyTitleId, 'https://example.com/unnamed.pdf', '2026–2027');
 
     $emptyUrlId = wp_insert_post([
         'post_type' => 'esctt_reg_document',
@@ -116,17 +117,17 @@ test('published season documents are ordered, named and downloadable', function 
         'post_status' => 'draft',
         'post_title' => 'Brouillon',
     ]);
-    registration_test_save_document($draftId, 'https://club.example/draft.pdf', '2026–2027');
+    registration_test_save_document($draftId, 'https://example.com/draft.pdf', '2026–2027');
 
     expect(esctt_registration_documents())->toBe([
         [
             'title' => 'Règlement intérieur — saison 2026–2027',
-            'url' => 'https://club.example/reglement.pdf',
+            'url' => 'https://example.com/reglement.pdf',
             'season' => '2026–2027',
         ],
         [
             'title' => 'Certificat médical — saison 2026–2027',
-            'url' => 'https://club.example/certificat.pdf',
+            'url' => 'https://example.com/certificat.pdf',
             'season' => '2026–2027',
         ],
     ]);
@@ -148,19 +149,19 @@ test('registration document saves sanitize input and ignore unsafe save contexts
         'post_title' => 'Document administré',
     ]);
 
-    registration_test_save_document($postId, 'https://club.example/document.pdf', '<b>2026–2027</b>');
-    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://club.example/document.pdf')
+    registration_test_save_document($postId, 'https://example.com/document.pdf', '<b>2026–2027</b>');
+    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://example.com/document.pdf')
         ->and(get_post_meta($postId, '_esctt_registration_document_season', true))->toBe('2026–2027');
 
     registration_test_trigger_save($postId, []);
-    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://club.example/document.pdf');
+    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://example.com/document.pdf');
 
     registration_test_trigger_save($postId, [
         'esctt_registration_document_nonce' => 'invalid',
-        'esctt_registration_document_url' => 'https://club.example/rejected.pdf',
+        'esctt_registration_document_url' => 'https://example.com/rejected.pdf',
         'esctt_registration_document_season' => 'rejected',
     ]);
-    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://club.example/document.pdf');
+    expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('https://example.com/document.pdf');
 
     registration_test_trigger_save($postId, [
         'esctt_registration_document_nonce' => wp_create_nonce('esctt_registration_document'),
@@ -170,7 +171,7 @@ test('registration document saves sanitize input and ignore unsafe save contexts
     wp_set_current_user(0);
     registration_test_trigger_save($postId, [
         'esctt_registration_document_nonce' => wp_create_nonce('esctt_registration_document'),
-        'esctt_registration_document_url' => 'https://club.example/rejected-without-capability.pdf',
+        'esctt_registration_document_url' => 'https://example.com/rejected-without-capability.pdf',
     ]);
     wp_set_current_user(1);
     expect(get_post_meta($postId, '_esctt_registration_document_url', true))->toBe('');
@@ -207,7 +208,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
         'post_status' => 'publish',
         'post_title' => 'Règlement intérieur — saison 2026–2027',
     ]);
-    registration_test_save_document($documentId, 'https://club.example/reglement.pdf', '');
+    registration_test_save_document($documentId, 'https://example.com/reglement.pdf', '');
 
     $postId = wp_insert_post([
         'post_type' => 'page',
@@ -238,7 +239,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
             ->and($rendered)->toContain('SPID Ma Licence')
             ->and($rendered)->not->toContain('<iframe')
             ->and($rendered)->toContain('ne collecte ni ne stocke')
-            ->and($rendered)->toContain('href="https://club.example/reglement.pdf"')
+            ->and($rendered)->toContain('href="https://example.com/reglement.pdf"')
             ->and($rendered)->toContain('Télécharger : Règlement intérieur — saison 2026–2027')
             ->and($stepsPosition)->toBeLessThan($helloAssoPosition);
     } finally {
