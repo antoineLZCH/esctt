@@ -7,3 +7,43 @@
 .esctt-hero--compact {
   padding-block: 1.5rem;
 }
+
+.esctt-partners {
+  padding: 3rem 1.5rem;
+}
+
+.esctt-sport-life {
+  display: grid;
+  gap: 2rem;
+  padding-block: 3rem;
+}
+
+.esctt-sport-life__intro,
+.esctt-sport-life__photos {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.esctt-sport-life__tournament,
+.esctt-sport-life__competitions {
+  border: 1px solid currentColor;
+  padding: 1.5rem;
+}
+
+.esctt-sport-life__tournament {
+  border-width: 0.25rem;
+}
+
+.esctt-sport-life__photos img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+@media (max-width: 48rem) {
+  .esctt-sport-life__intro,
+  .esctt-sport-life__photos {
+    grid-template-columns: 1fr;
+  }
+}

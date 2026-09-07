@@ -6,6 +6,10 @@
       @include('partials.content-inscriptions')
     @else
       @includeFirst(['partials.content-page', 'partials.content'])
+
+      @if (is_front_page())
+        {!! \App\faq_markup(3, 'home') !!}
+      @endif
     @endif
   @endwhile
 @endsection
