@@ -15,10 +15,6 @@
     @include('partials.important-message')
 
     <div id="app">
-      <a class="sr-only focus:not-sr-only" href="#main">
-        {{ __('Skip to content', 'esctt') }}
-      </a>
-
       @include('sections.header')
 
       <main id="main" class="main">

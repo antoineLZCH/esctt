@@ -1,4 +1,8 @@
 <header class="banner">
+  <a class="sr-only focus:not-sr-only" href="#main">
+    {{ __('Skip to content', 'esctt') }}
+  </a>
+
   <a class="brand" href="{{ home_url('/') }}">
     {!! $siteName !!}
   </a>
