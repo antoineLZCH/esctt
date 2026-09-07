@@ -72,7 +72,11 @@ test('the sport life block exposes an accessible labelled section and non-empty 
 
     $markup = do_blocks(sport_life_block());
 
-    expect($markup)->toContain('aria-labelledby="esctt-sport-life-title"')
+    expect(\App\sport_life_helloasso_url('https:'))->toBeNull()
+        ->and(\App\sport_life_helloasso_url('https://helloasso.com/tournoi'))->toBe('https://helloasso.com/tournoi')
+        ->and(\App\sport_life_helloasso_url('https://www.helloasso.com/tournoi'))->toBe('https://www.helloasso.com/tournoi')
+        ->and(\App\sport_life_helloasso_url('https://example.com/tournoi'))->toBeNull()
+        ->and($markup)->toContain('aria-labelledby="esctt-sport-life-title"')
         ->and($markup)->toContain('id="esctt-sport-life-title"')
         ->and(substr_count($markup, 'alt="'))->toBe(2)
         ->and($markup)->not->toContain('alt=""');
