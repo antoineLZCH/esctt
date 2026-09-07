@@ -150,12 +150,20 @@ test('native page operations cover drafts, previews, publication, navigation and
 
         expect($navigation)->toContain(get_permalink($pageId));
 
-        $revisionId = wp_save_post_revision($pageId);
-        expect($revisionId)->toBeInt()
-            ->and(wp_update_post([
-                'ID' => $pageId,
-                'post_content' => $revisedContent,
-            ], true))->toBe($pageId)
+        expect(wp_update_post([
+            'ID' => $pageId,
+            'post_content' => $revisedContent,
+        ], true))->toBe($pageId);
+
+        $revisionId = 0;
+        foreach (wp_get_post_revisions($pageId) as $revision) {
+            if ($revision->post_content === $originalContent) {
+                $revisionId = (int) $revision->ID;
+                break;
+            }
+        }
+
+        expect($revisionId)->toBeGreaterThan(0)
             ->and(wp_restore_post_revision($revisionId))->toBe($pageId)
             ->and(get_post_field('post_content', $pageId))->toBe($originalContent);
     } finally {
