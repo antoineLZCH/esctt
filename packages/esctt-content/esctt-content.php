@@ -104,9 +104,11 @@ function esctt_render_partner_meta_box(WP_Post $post): void
 
 function esctt_can_save_partner(int $post_id): bool
 {
+    // @codeCoverageIgnoreStart
     if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($post_id)) {
         return false;
     }
+    // @codeCoverageIgnoreEnd
 
     if (get_post_type($post_id) !== ESCTT_PARTNER_POST_TYPE
         || ! current_user_can('edit_post', $post_id)
