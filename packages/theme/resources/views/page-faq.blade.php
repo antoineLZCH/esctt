@@ -3,9 +3,6 @@
 @section('content')
   @while(have_posts()) @php(the_post())
     @includeFirst(['partials.content-page', 'partials.content'])
-
-    @if (is_front_page())
-      {!! \App\faq_markup(3, 'home') !!}
-    @endif
+    {!! \App\faq_markup(null, 'page') !!}
   @endwhile
 @endsection
