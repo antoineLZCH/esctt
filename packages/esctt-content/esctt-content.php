@@ -79,10 +79,46 @@ function esctt_register_important_message_meta_box(): void
     );
 }
 
+/**
+ * @return array<int, array{id: int, label: string, url: string}>
+ */
+function esctt_important_message_detail_targets(): array
+{
+    $targets = [];
+
+    foreach (get_posts([
+        'post_type' => ['page', 'post'],
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'title',
+        'order' => 'ASC',
+    ]) as $target) {
+        /** @var WP_Post_Type $postType */
+        $postType = get_post_type_object($target->post_type);
+        $targets[] = [
+            'id' => (int) $target->ID,
+            'label' => sprintf('%s — %s', $postType->labels->singular_name, get_the_title($target)),
+            'url' => (string) get_permalink($target),
+        ];
+    }
+
+    return $targets;
+}
+
 function esctt_render_important_message_meta_box(WP_Post $post): void
 {
     wp_nonce_field('esctt_save_important_message', 'esctt_important_message_nonce');
     $detailUrl = (string) get_post_meta($post->ID, ESCTT_IMPORTANT_MESSAGE_DETAIL_URL_META, true);
+    $detailTargets = esctt_important_message_detail_targets();
+    $detailTarget = $detailUrl === '' ? '' : 'external';
+
+    foreach ($detailTargets as $target) {
+        if (untrailingslashit($target['url']) === untrailingslashit($detailUrl)) {
+            $detailTarget = 'post:' . $target['id'];
+            break;
+        }
+    }
+
     $detailLabel = (string) get_post_meta($post->ID, ESCTT_IMPORTANT_MESSAGE_DETAIL_LABEL_META, true);
     ?>
     <p>
@@ -91,8 +127,19 @@ function esctt_render_important_message_meta_box(WP_Post $post): void
         <?php esc_html_e('Repassez-le en brouillon pour le désactiver.', 'esctt-content'); ?>
     </p>
     <p>
-        <label for="esctt-important-detail-url"><?php esc_html_e('Lien de détail (facultatif)', 'esctt-content'); ?></label>
+        <label for="esctt-important-detail-target"><?php esc_html_e('Lien de détail (facultatif)', 'esctt-content'); ?></label>
+        <select id="esctt-important-detail-target" name="esctt_important_detail_target">
+            <option value="" <?php selected($detailTarget, ''); ?>><?php esc_html_e('Aucun lien', 'esctt-content'); ?></option>
+            <?php foreach ($detailTargets as $target) : ?>
+                <option value="post:<?php echo esc_attr((string) $target['id']); ?>" <?php selected($detailTarget, 'post:' . $target['id']); ?>><?php echo esc_html($target['label']); ?></option>
+            <?php endforeach; ?>
+            <option value="external" <?php selected($detailTarget, 'external'); ?>><?php esc_html_e('URL externe', 'esctt-content'); ?></option>
+        </select>
+    </p>
+    <p>
+        <label for="esctt-important-detail-url"><?php esc_html_e('URL externe', 'esctt-content'); ?></label>
         <input id="esctt-important-detail-url" name="esctt_important_detail_url" type="url" value="<?php echo esc_attr($detailUrl); ?>" class="widefat" autocomplete="url">
+        <span class="description"><?php esc_html_e('Utilisée uniquement si « URL externe » est sélectionnée.', 'esctt-content'); ?></span>
     </p>
     <p>
         <label for="esctt-important-detail-label"><?php esc_html_e('Libellé accessible du lien', 'esctt-content'); ?></label>
@@ -128,9 +175,24 @@ function esctt_save_important_message(int $post_id): void
         return;
     }
 
-    $detailUrl = isset($_POST['esctt_important_detail_url']) && is_string($_POST['esctt_important_detail_url'])
-        ? esc_url_raw(wp_unslash($_POST['esctt_important_detail_url']))
+    $hasDetailTarget = isset($_POST['esctt_important_detail_target']);
+    $detailTarget = $hasDetailTarget && is_string($_POST['esctt_important_detail_target'])
+        ? sanitize_text_field(wp_unslash($_POST['esctt_important_detail_target']))
         : '';
+    $detailUrl = '';
+
+    foreach (esctt_important_message_detail_targets() as $target) {
+        if ($detailTarget === 'post:' . $target['id']) {
+            $detailUrl = $target['url'];
+            break;
+        }
+    }
+
+    if ($detailUrl === '' && ($detailTarget === 'external' || ! $hasDetailTarget)) {
+        $detailUrl = isset($_POST['esctt_important_detail_url']) && is_string($_POST['esctt_important_detail_url'])
+            ? esc_url_raw(wp_unslash($_POST['esctt_important_detail_url']))
+            : '';
+    }
     $detailLabel = isset($_POST['esctt_important_detail_label']) && is_string($_POST['esctt_important_detail_label'])
         ? sanitize_text_field(wp_unslash($_POST['esctt_important_detail_label']))
         : '';

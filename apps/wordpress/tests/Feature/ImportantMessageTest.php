@@ -42,8 +42,11 @@ test('important messages expose an admin-managed WordPress model', function () {
         esctt_render_important_message_meta_box(get_post($messageId));
         $metaBox = ob_get_clean();
 
-        expect($metaBox)->toContain('esctt_important_detail_url')
+        expect($metaBox)->toContain('esctt_important_detail_target')
+            ->and($metaBox)->toContain('esctt_important_detail_url')
             ->and($metaBox)->toContain('esctt_important_detail_label')
+            ->and($metaBox)->toContain('URL externe')
+            ->and($metaBox)->toContain('type="url"')
             ->and($metaBox)->toContain('Un seul message publié');
     } finally {
         if (is_int($messageId)) {
@@ -175,10 +178,16 @@ test('important message fields validate admin saves', function () {
         'post_status' => 'draft',
         'post_title' => 'Message à valider',
     ], true);
+    $internalPostId = wp_insert_post([
+        'post_type' => 'post',
+        'post_status' => 'publish',
+        'post_title' => 'Article interne',
+    ], true);
     $originalPost = $_POST;
 
     try {
-        expect($messageId)->toBeInt();
+        expect($messageId)->toBeInt()
+            ->and($internalPostId)->toBeInt();
 
         $_POST = [];
         expect(esctt_can_save_important_message($messageId))->toBeFalse();
@@ -196,6 +205,7 @@ test('important message fields validate admin saves', function () {
         wp_set_current_user($adminId);
         $_POST = [
             'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_target' => 'external',
             'esctt_important_detail_url' => 'https://example.test/validated',
             'esctt_important_detail_label' => 'Lire le détail',
         ];
@@ -205,8 +215,14 @@ test('important message fields validate admin saves', function () {
         expect(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_URL_META, true))->toBe('https://example.test/validated')
             ->and(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_LABEL_META, true))->toBe('Lire le détail');
 
+        ob_start();
+        esctt_render_important_message_meta_box(get_post($messageId));
+        $externalMetaBox = ob_get_clean();
+        expect($externalMetaBox)->toContain('value="https://example.test/validated"');
+
         $_POST = [
             'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_target' => 'external',
             'esctt_important_detail_url' => ['not-a-string'],
             'esctt_important_detail_label' => ['not-a-string'],
         ];
@@ -216,11 +232,47 @@ test('important message fields validate admin saves', function () {
 
         $_POST = [
             'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_target' => ['external'],
+            'esctt_important_detail_url' => 'https://example.test/ignored-target',
+        ];
+        esctt_save_important_message($messageId);
+
+        expect(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_URL_META, true))->toBe('');
+
+        $_POST = [
+            'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_url' => 'https://example.test/legacy',
+            'esctt_important_detail_label' => 'Ancien formulaire',
+        ];
+        esctt_save_important_message($messageId);
+
+        expect(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_URL_META, true))->toBe('https://example.test/legacy')
+            ->and(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_LABEL_META, true))->toBe('Ancien formulaire');
+
+        $_POST = [
+            'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_target' => 'external',
             'esctt_important_detail_url' => 'https://example.test/default-label',
         ];
         esctt_save_important_message($messageId);
 
         expect(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_LABEL_META, true))->toBe('En savoir plus sur cette information');
+
+        $_POST = [
+            'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
+            'esctt_important_detail_target' => 'post:' . $internalPostId,
+            'esctt_important_detail_url' => 'https://example.test/ignored',
+            'esctt_important_detail_label' => 'Voir les inscriptions',
+        ];
+        esctt_save_important_message($messageId);
+
+        expect(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_URL_META, true))->toBe((string) get_permalink($internalPostId))
+            ->and(get_post_meta($messageId, ESCTT_IMPORTANT_MESSAGE_DETAIL_LABEL_META, true))->toBe('Voir les inscriptions');
+
+        ob_start();
+        esctt_render_important_message_meta_box(get_post($messageId));
+        $internalMetaBox = ob_get_clean();
+        expect($internalMetaBox)->toContain('post:' . $internalPostId);
 
         $revisionParent = wp_insert_post([
             'post_type' => 'post',
@@ -241,6 +293,10 @@ test('important message fields validate admin saves', function () {
 
         if (is_int($messageId)) {
             wp_delete_post($messageId, true);
+        }
+
+        if (is_int($internalPostId ?? null)) {
+            wp_delete_post($internalPostId, true);
         }
     }
 })->skip(
