@@ -41,7 +41,7 @@ function sport_life_helloasso_url(string $url): ?string
     $url = esc_url_raw(trim($url));
     $pattern = '~^https?://(?:[a-z0-9-]+\.)*helloasso\.com(?::[0-9]+)?(?:[/?#]|$)~i';
 
-    return [$url, null][(int) (preg_match($pattern, $url) !== 1)];
+    return [null, $url][(int) preg_match($pattern, $url)];
 }
 
 function render_sport_life(array $attributes): string
