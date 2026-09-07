@@ -29,6 +29,13 @@ test('legacy page URLs redirect permanently to their current native pages', asyn
         if (source.includes('?')) {
             expect(location.search).toBe('?utm_source=legacy');
         }
+
+        const headResponse = await request.head(source, { maxRedirects: 0 });
+        expect(headResponse.status()).toBe(301);
+        expect(new URL(headResponse.headers().location, baseURL).pathname).toBe(destination);
+
+        const postResponse = await request.post(source, { maxRedirects: 0 });
+        expect(postResponse.status()).not.toBe(301);
     }
 });
 

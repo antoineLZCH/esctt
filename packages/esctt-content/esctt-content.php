@@ -1963,6 +1963,31 @@ function esctt_register_inventoried_redirects(): void
     }
 }
 
+function esctt_redirect_would_loop(string $sourcePath, int $targetId): bool
+{
+    $visited = [];
+    $currentTargetId = $targetId;
+
+    while (true) {
+        $currentPath = esctt_page_path($currentTargetId);
+        if ($currentPath === '') {
+            return false;
+        }
+
+        if ($currentPath === $sourcePath || isset($visited[$currentPath])) {
+            return true;
+        }
+
+        $visited[$currentPath] = true;
+        $redirect = esctt_find_legacy_redirect($currentPath);
+        if ($redirect === null) {
+            return false;
+        }
+
+        $currentTargetId = $redirect['target_id'];
+    }
+}
+
 function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
 {
     $sourcePath = esctt_redirect_source_path($sourcePath);
@@ -1972,7 +1997,7 @@ function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
 
     $targetPath = esctt_redirect_path_from_url((string) get_permalink($targetId));
 
-    if ($targetPath === '' || $sourcePath === $targetPath) {
+    if ($targetPath === '' || $sourcePath === $targetPath || esctt_redirect_would_loop($sourcePath, $targetId)) {
         return;
     }
 

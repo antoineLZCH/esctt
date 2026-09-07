@@ -121,6 +121,8 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
 
     $previousPermalinkStructure = legacy_urls_enable_pretty_permalinks();
     $targetId = legacy_urls_page('Redirect target', 'redirect-target-' . wp_generate_password(6, false, false));
+    $loopAId = legacy_urls_page('Redirect loop A', 'redirect-loop-a-' . wp_generate_password(6, false, false));
+    $loopBId = legacy_urls_page('Redirect loop B', 'redirect-loop-b-' . wp_generate_password(6, false, false));
     $redirectId = wp_insert_post([
         'post_type' => ESCTT_REDIRECT_POST_TYPE,
         'post_status' => 'publish',
@@ -144,6 +146,20 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
     if (is_wp_error($revisionId)) {
         throw new RuntimeException('Unable to create redirect revision fixture.');
     }
+    $loopAPath = esctt_page_path($loopAId);
+    $loopBPath = esctt_page_path($loopBId);
+    esctt_upsert_page_redirect($loopBPath, $loopAId);
+    $loopBRedirect = esctt_find_legacy_redirect($loopBPath);
+    $loopARedirectId = wp_insert_post([
+        'post_type' => ESCTT_REDIRECT_POST_TYPE,
+        'post_status' => 'publish',
+        'post_title' => 'Redirect loop A fixture',
+    ], true);
+    if (is_wp_error($loopARedirectId)) {
+        throw new RuntimeException('Unable to create redirect loop fixture.');
+    }
+    update_post_meta($loopARedirectId, ESCTT_REDIRECT_SOURCE_META, $loopAPath);
+    update_post_meta($loopARedirectId, ESCTT_REDIRECT_TARGET_META, $loopBId);
     global $wpdb;
     $wpdb->update($wpdb->posts, ['post_parent' => $cycleBId], ['ID' => $cycleAId]);
     clean_post_cache($cycleAId);
@@ -171,6 +187,11 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
             ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
             ->and(esctt_page_is_descendant($cycleAId, 999999))->toBeFalse()
+            ->and(esctt_redirect_would_loop('', 0))->toBeFalse()
+            ->and(esctt_redirect_would_loop('/unrelated-source', $targetId))->toBeFalse()
+            ->and(esctt_redirect_would_loop($loopAPath, $loopBId))->toBeTrue()
+            ->and(esctt_redirect_would_loop('/unrelated-source', $loopAId))->toBeTrue()
+            ->and($loopBRedirect)->not->toBeNull()
             ->and(esctt_can_save_redirect($revisionId))->toBeFalse()
             ->and($metaBox)->toContain('esctt-redirect-source')
             ->and($metaBox)->toContain('esctt-redirect-target');
@@ -178,6 +199,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         esctt_upsert_page_redirect('', $targetId);
         esctt_upsert_page_redirect('/invalid-target/', 0);
         esctt_upsert_page_redirect(esctt_page_path($targetId), $targetId);
+        esctt_upsert_page_redirect($loopAPath, $loopBId);
         $forceInsertError = '__return_true';
         add_filter('wp_insert_post_empty_content', $forceInsertError);
         esctt_upsert_page_redirect('/forced-insert-error', $targetId);
@@ -239,6 +261,10 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         wp_delete_post($cycleAId, true);
         wp_delete_post($cycleBId, true);
         wp_delete_post($revisionId, true);
+        wp_delete_post((int) ($loopBRedirect['post_id'] ?? 0), true);
+        wp_delete_post($loopARedirectId, true);
+        wp_delete_post($loopAId, true);
+        wp_delete_post($loopBId, true);
         legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
