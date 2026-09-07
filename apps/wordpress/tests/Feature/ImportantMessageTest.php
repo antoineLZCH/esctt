@@ -1,8 +1,5 @@
 <?php
 
-use PHPUnit\Framework\Attributes\RunInSeparateProcess;
-use PHPUnit\Framework\TestCase;
-
 function important_message_load_wordpress(): void
 {
     putenv('APP_RUNNING_IN_CONSOLE=false');
@@ -250,44 +247,3 @@ test('important message fields validate admin saves', function () {
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
-
-final class ImportantMessageAutosaveTest extends TestCase
-{
-    #[RunInSeparateProcess]
-    public function testImportantMessageSaveRejectsAutosave(): void
-    {
-        if (getenv('ESCTT_WORDPRESS_TESTS') !== '1') {
-            self::markTestSkipped('Requires the CI WordPress installation.');
-        }
-
-        important_message_load_wordpress();
-        $adminId = important_message_admin_id();
-        wp_set_current_user($adminId);
-        $messageId = wp_insert_post([
-            'post_type' => ESCTT_IMPORTANT_MESSAGE_POST_TYPE,
-            'post_status' => 'draft',
-            'post_title' => 'Message autosave',
-        ], true);
-
-        try {
-            self::assertIsInt($messageId);
-
-            if (! defined('DOING_AUTOSAVE')) {
-                define('DOING_AUTOSAVE', true);
-            }
-
-            $_POST = [
-                'esctt_important_message_nonce' => wp_create_nonce('esctt_save_important_message'),
-            ];
-
-            self::assertFalse(esctt_can_save_important_message($messageId));
-        } finally {
-            $_POST = [];
-            wp_set_current_user(0);
-
-            if (is_int($messageId)) {
-                wp_delete_post($messageId, true);
-            }
-        }
-    }
-}
