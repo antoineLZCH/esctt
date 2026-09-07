@@ -152,11 +152,18 @@ test('published partner changes render in order with explicit external behavior'
         'post_title' => 'Partenaire sans site',
         'menu_order' => 30,
     ], true);
+    $emptyName = wp_insert_post([
+        'post_type' => ESCTT_PARTNER_POST_TYPE,
+        'post_status' => 'publish',
+        'post_title' => '',
+        'menu_order' => 15,
+    ], true);
 
     try {
         expect($first)->toBeInt()
             ->and($second)->toBeInt()
             ->and($withoutUrl)->toBeInt()
+            ->and($emptyName)->toBeInt()
             ->and($allowedBlocks)->toContain('esctt/partners');
 
         update_post_meta($first, ESCTT_PARTNER_URL_META, 'https://alpha.example.test/');
@@ -199,6 +206,10 @@ test('published partner changes render in order with explicit external behavior'
 
         if (is_int($withoutUrl)) {
             wp_delete_post($withoutUrl, true);
+        }
+
+        if (is_int($emptyName)) {
+            wp_delete_post($emptyName, true);
         }
     }
 })->skip(
