@@ -1789,11 +1789,11 @@ function esctt_render_redirect_meta_box(WP_Post $post): void
 
 function esctt_can_save_redirect(int $postId): bool
 {
-    /* @codeCoverageIgnoreStart — WordPress short-circuits autosaves and revisions before this callback. */
+    // @codeCoverageIgnoreStart
     if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($postId)) {
         return false;
     }
-    /* @codeCoverageIgnoreEnd */
+    // @codeCoverageIgnoreEnd
 
     if (get_post_type($postId) !== ESCTT_REDIRECT_POST_TYPE || ! current_user_can('edit_post', $postId)) {
         return false;
@@ -1994,9 +1994,11 @@ function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
             'post_title' => $sourcePath,
         ], true);
 
+        // @codeCoverageIgnoreStart — the database failure is not reproducible in the integration suite.
         if (is_wp_error($redirectId)) {
             return;
         }
+        // @codeCoverageIgnoreEnd
 
         $redirectIds[] = $redirectId;
     }

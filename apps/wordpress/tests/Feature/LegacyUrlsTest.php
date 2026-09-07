@@ -154,7 +154,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_redirect_source_path("/null\0path"))->toBe('')
             ->and(esctt_redirect_source_path('relative/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('https://evil.example/path'))->toBe('')
-            ->and(esctt_redirect_path_from_url('https://[invalid'))->toBe('')
+            ->and(esctt_redirect_path_from_url('http://'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://user:pass@127.0.0.1/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://127.0.0.1:9999/path'))->toBe('')
             ->and(esctt_page_path(0))->toBe('')
