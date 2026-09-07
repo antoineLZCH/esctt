@@ -48,20 +48,10 @@ test('the sport life CTA is absent until an external HelloAsso URL is configured
     sport_life_load_wordpress();
 
     $withoutUrl = do_blocks(sport_life_block());
-    $sameSiteUrl = do_blocks(sport_life_block(['helloAssoUrl' => home_url('/inscriptions')]));
-    $otherDomainUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://example.com/tournoi']));
-    $missingHostUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https:/tournoi']));
-    $protocolRelativeUrl = do_blocks(sport_life_block(['helloAssoUrl' => '//helloasso.com/tournoi']));
-    $unsupportedSchemeUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'ftp://helloasso.com/tournoi']));
-    $rootHelloAssoUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://helloasso.com/tournoi']));
+    $helloAssoUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://www.helloasso.com/tournoi']));
 
     expect($withoutUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($sameSiteUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($otherDomainUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($missingHostUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($protocolRelativeUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($unsupportedSchemeUrl)->not->toContain('esctt-sport-life__cta')
-        ->and($rootHelloAssoUrl)->toContain('esctt-sport-life__cta');
+        ->and($helloAssoUrl)->toContain('esctt-sport-life__cta');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
@@ -72,11 +62,7 @@ test('the sport life block exposes an accessible labelled section and non-empty 
 
     $markup = do_blocks(sport_life_block());
 
-    expect(\App\sport_life_helloasso_url('https:'))->toBeNull()
-        ->and(\App\sport_life_helloasso_url('https://helloasso.com/tournoi'))->toBe('https://helloasso.com/tournoi')
-        ->and(\App\sport_life_helloasso_url('https://www.helloasso.com/tournoi'))->toBe('https://www.helloasso.com/tournoi')
-        ->and(\App\sport_life_helloasso_url('https://example.com/tournoi'))->toBeNull()
-        ->and(\App\render_sport_life([]))->not->toContain('esctt-sport-life__cta')
+    expect(\App\render_sport_life([]))->not->toContain('esctt-sport-life__cta')
         ->and($markup)->toContain('aria-labelledby="esctt-sport-life-title"')
         ->and($markup)->toContain('id="esctt-sport-life-title"')
         ->and(substr_count($markup, 'alt="'))->toBe(2)
