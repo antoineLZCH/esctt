@@ -111,6 +111,7 @@ if ((${#privacy_ids[@]} == 0)); then
         --post_title=Privacy \
         --post_name=confidentialite \
         --post_content=Privacy \
+        --post_excerpt=Privacy \
         --porcelain)
 else
     privacy_id="${privacy_ids[0]}"
