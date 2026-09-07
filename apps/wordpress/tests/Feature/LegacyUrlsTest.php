@@ -18,12 +18,25 @@ function legacy_urls_page(string $title, string $slug, int $parent = 0): int
     ], true);
 }
 
+function legacy_urls_enable_pretty_permalinks(): string
+{
+    $previous = (string) get_option('permalink_structure');
+    wp_rewrite()->set_permalink_structure('/%postname%/');
+    flush_rewrite_rules(false);
+
+    return $previous;
+}
+
+function legacy_urls_restore_permalinks(string $permalinkStructure): void
+{
+    wp_rewrite()->set_permalink_structure($permalinkStructure);
+    flush_rewrite_rules(false);
+}
+
 test('a published page slug change records its old hierarchical URL', function () {
     legacy_urls_load_wordpress();
 
-    $previousPermalinkStructure = get_option('permalink_structure');
-    update_option('permalink_structure', '/%postname%/');
-    flush_rewrite_rules(false);
+    $previousPermalinkStructure = legacy_urls_enable_pretty_permalinks();
     $parentId = legacy_urls_page('Parent page', 'legacy-parent-' . wp_generate_password(6, false, false));
     $childId = legacy_urls_page('Child page', 'legacy-child-' . wp_generate_password(6, false, false), $parentId);
     $oldPath = wp_parse_url(get_permalink($childId), PHP_URL_PATH);
@@ -52,8 +65,7 @@ test('a published page slug change records its old hierarchical URL', function (
     } finally {
         wp_delete_post($childId, true);
         wp_delete_post($parentId, true);
-        update_option('permalink_structure', $previousPermalinkStructure);
-        flush_rewrite_rules(false);
+        legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
@@ -103,9 +115,7 @@ test('the redirect registry accepts internal paths but never external targets', 
 test('successive page slug changes resolve every old URL to the current page', function () {
     legacy_urls_load_wordpress();
 
-    $previousPermalinkStructure = get_option('permalink_structure');
-    update_option('permalink_structure', '/%postname%/');
-    flush_rewrite_rules(false);
+    $previousPermalinkStructure = legacy_urls_enable_pretty_permalinks();
     $parentId = legacy_urls_page('Successive parent', 'successive-parent-' . wp_generate_password(6, false, false));
     $childId = legacy_urls_page('Successive child', 'successive-child-' . wp_generate_password(6, false, false), $parentId);
     $redirectIds = [];
@@ -145,8 +155,7 @@ test('successive page slug changes resolve every old URL to the current page', f
         }
         wp_delete_post($childId, true);
         wp_delete_post($parentId, true);
-        update_option('permalink_structure', $previousPermalinkStructure);
-        flush_rewrite_rules(false);
+        legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
@@ -156,9 +165,7 @@ test('successive page slug changes resolve every old URL to the current page', f
 test('changing a page parent records old paths for the page and its descendants', function () {
     legacy_urls_load_wordpress();
 
-    $previousPermalinkStructure = get_option('permalink_structure');
-    update_option('permalink_structure', '/%postname%/');
-    flush_rewrite_rules(false);
+    $previousPermalinkStructure = legacy_urls_enable_pretty_permalinks();
     $parentId = legacy_urls_page('Parent before', 'parent-before-' . wp_generate_password(6, false, false));
     $childId = legacy_urls_page('Child before', 'child-before-' . wp_generate_password(6, false, false), $parentId);
     $oldParentPath = (string) wp_parse_url(get_permalink($parentId), PHP_URL_PATH);
@@ -198,8 +205,7 @@ test('changing a page parent records old paths for the page and its descendants'
         }
         wp_delete_post($childId, true);
         wp_delete_post($parentId, true);
-        update_option('permalink_structure', $previousPermalinkStructure);
-        flush_rewrite_rules(false);
+        legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',

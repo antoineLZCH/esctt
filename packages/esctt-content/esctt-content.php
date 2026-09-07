@@ -1860,7 +1860,7 @@ function esctt_page_is_descendant(int $pageId, int $ancestorId): bool
 function esctt_capture_page_redirects(int $postId, array $postData): void
 {
     $post = get_post($postId);
-    error_log(sprintf('[DEBUG-esctt] capture id=%d type=%s status=%s', $postId, $post instanceof WP_Post ? $post->post_type : 'none', $post instanceof WP_Post ? $post->post_status : 'none'));
+
 
     if (! $post instanceof WP_Post || $post->post_type !== 'page' || $post->post_status !== 'publish') {
         return;
@@ -1881,7 +1881,7 @@ function esctt_capture_page_redirects(int $postId, array $postData): void
     }
 
     $GLOBALS['esctt_page_redirect_snapshot'][$postId] = $snapshot;
-    error_log(sprintf('[DEBUG-esctt] snapshot id=%d count=%d', $postId, count($snapshot)));
+
 }
 
 function esctt_capture_page_redirects_from_data(
@@ -1890,7 +1890,7 @@ function esctt_capture_page_redirects_from_data(
     array $unsanitizedPostData,
     bool $update,
 ): array {
-    error_log(sprintf('[DEBUG-esctt] filter update=%s id=%s', $update ? 'true' : 'false', isset($postData['ID']) ? (string) $postData['ID'] : 'missing'));
+
     if ($update) {
         esctt_capture_page_redirects((int) ($postData['ID'] ?? 0), $postData);
     }
@@ -1913,7 +1913,7 @@ function esctt_store_page_redirects(int $postId, WP_Post $postAfter): void
     foreach ($snapshot as $pageId => $oldPath) {
         $page = get_post((int) $pageId);
         $newPath = $page instanceof WP_Post ? esctt_page_path($page) : '';
-        error_log(sprintf('[DEBUG-esctt] path id=%d old=%s new=%s', (int) $pageId, (string) $oldPath, $newPath));
+
 
         if (! $page instanceof WP_Post || $page->post_status !== 'publish' || $newPath === '' || $oldPath === $newPath) {
             continue;
@@ -1928,7 +1928,7 @@ function esctt_store_page_redirects_after_insert(
     WP_Post $postAfter,
     bool $update,
 ): void {
-    error_log(sprintf('[DEBUG-esctt] store-hook id=%d update=%s type=%s status=%s', $postId, $update ? 'true' : 'false', $postAfter->post_type, $postAfter->post_status));
+
     if (! $update) {
         return;
     }
@@ -1966,15 +1966,11 @@ function esctt_register_inventoried_redirects(): void
 function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
 {
     $sourcePath = esctt_redirect_source_path($sourcePath);
-    $targetValid = esctt_redirect_target_is_valid($targetId);
-    error_log(sprintf('[DEBUG-esctt] upsert source=%s target=%d valid=%s', $sourcePath, $targetId, $targetValid ? 'true' : 'false'));
-
-    if ($sourcePath === '' || ! $targetValid) {
+    if ($sourcePath === '' || ! esctt_redirect_target_is_valid($targetId)) {
         return;
     }
 
     $targetPath = esctt_redirect_path_from_url((string) get_permalink($targetId));
-    error_log(sprintf('[DEBUG-esctt] target-path=%s', $targetPath));
 
     if ($targetPath === '' || $sourcePath === $targetPath) {
         return;
