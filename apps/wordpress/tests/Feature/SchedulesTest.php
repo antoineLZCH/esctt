@@ -52,6 +52,9 @@ test('the schedule model exposes editable locations, profiles, and slots', funct
     $location = get_post_type_object('esctt_location');
     $slot = get_post_type_object('esctt_practice_slot');
     $profiles = get_taxonomy('esctt_player_profile');
+    $jeune = get_term_by('slug', 'jeune', 'esctt_player_profile');
+    wp_delete_term($jeune->term_id, 'esctt_player_profile');
+    esctt_seed_player_profiles();
     $profileTerms = get_terms([
         'taxonomy' => 'esctt_player_profile',
         'hide_empty' => false,
@@ -67,6 +70,87 @@ test('the schedule model exposes editable locations, profiles, and slots', funct
         ->and($profiles->show_ui)->toBeTrue()
         ->and($profiles->show_in_rest)->toBeTrue()
         ->and(wp_list_pluck($profileTerms, 'slug'))->toContain('jeune', 'adulte-loisir', 'adulte-competition');
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
+test('admins can edit and inspect location and slot fields', function () {
+    schedules_load_wordpress();
+
+    $admin = get_users([
+        'role' => 'administrator',
+        'number' => 1,
+    ])[0] ?? null;
+    wp_set_current_user($admin->ID);
+    $previousPost = $_POST;
+    $locationId = wp_insert_post([
+        'post_type' => 'esctt_location',
+        'post_status' => 'publish',
+        'post_title' => 'Salle admin',
+    ]);
+    $slotId = wp_insert_post([
+        'post_type' => 'esctt_practice_slot',
+        'post_status' => 'draft',
+        'post_title' => 'Créneau admin',
+    ]);
+
+    try {
+        $_POST = [
+            'esctt_location_nonce' => wp_create_nonce('esctt_save_location'),
+            'esctt_location_address' => '5 rue du Test, Colombes',
+        ];
+        esctt_save_location($locationId);
+
+        ob_start();
+        esctt_render_location_meta_box(get_post($locationId));
+        $locationFields = ob_get_clean();
+
+        expect($locationFields)->toContain('5 rue du Test, Colombes', 'required')
+            ->and(esctt_location_is_valid($locationId))->toBeTrue()
+            ->and(esctt_location_is_valid(0))->toBeFalse();
+
+        $_POST['esctt_location_address'] = '';
+        esctt_save_location($locationId);
+        expect(get_post_meta($locationId, '_esctt_location_address', true))->toBe('');
+
+        $_POST['esctt_location_address'] = '5 rue du Test, Colombes';
+        esctt_save_location($locationId);
+        $_POST = [
+            'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
+            'esctt_practice_day' => '2',
+            'esctt_practice_start' => '20:00',
+            'esctt_practice_end' => '22:00',
+            'esctt_practice_location' => (string) $locationId,
+        ];
+        esctt_save_practice_slot($slotId);
+
+        ob_start();
+        esctt_render_practice_slot_meta_box(get_post($slotId));
+        $slotFields = ob_get_clean();
+
+        expect($slotFields)->toContain('Mardi', '20:00', 'Salle admin')
+            ->and(get_post_meta($slotId, '_esctt_practice_day', true))->toBe('2')
+            ->and(esctt_content_meta_auth(false, '_esctt_location_address', $locationId, $admin->ID))->toBeTrue();
+
+        $_POST = [
+            'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
+            'esctt_practice_day' => '8',
+            'esctt_practice_start' => 'invalid',
+            'esctt_practice_end' => 'invalid',
+            'esctt_practice_location' => '0',
+        ];
+        esctt_save_practice_slot($slotId);
+
+        expect(get_post_meta($slotId, '_esctt_practice_day', true))->toBe('')
+            ->and(get_post_meta($slotId, '_esctt_practice_start', true))->toBe('')
+            ->and(get_post_meta($slotId, '_esctt_practice_end', true))->toBe('')
+            ->and(get_post_meta($slotId, '_esctt_practice_location', true))->toBe('');
+    } finally {
+        $_POST = $previousPost;
+        wp_delete_post($slotId, true);
+        wp_delete_post($locationId, true);
+    }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
@@ -122,6 +206,15 @@ test('published slots render by day and start time with live location and profil
             ->and(strpos($html, 'Lundi'))->toBeLessThan(strpos($html, 'Mardi'))
             ->and(strpos($html, 'Matin'))->toBeLessThan(strpos($html, 'Soirée tardive'))
             ->and(strpos($html, 'Soirée tardive'))->toBeLessThan(strpos($html, 'Mardi soir'));
+
+        $termsError = static fn() => new WP_Error('terms_failed');
+        add_filter('get_object_terms', $termsError, 99, 4);
+        expect(esctt_practice_slot_is_valid($lateSlotId))->toBeFalse();
+        remove_filter('get_object_terms', $termsError, 99);
+
+        wp_delete_object_term_relationships($tuesdaySlotId, 'esctt_player_profile');
+        expect(do_blocks('<!-- wp:esctt/practice-schedules /-->'))->not->toContain('Mardi soir');
+        wp_set_object_terms($tuesdaySlotId, 'adulte-competition', 'esctt_player_profile');
 
         wp_update_post(['ID' => $lateSlotId, 'post_title' => 'Édition publiée']);
         $updatedHtml = do_blocks('<!-- wp:esctt/practice-schedules /-->');

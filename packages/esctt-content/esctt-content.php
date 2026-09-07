@@ -15,10 +15,6 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-if (! function_exists('add_action')) {
-    return;
-}
-
 const ESCTT_LOCATION_POST_TYPE = 'esctt_location';
 const ESCTT_PRACTICE_SLOT_POST_TYPE = 'esctt_practice_slot';
 const ESCTT_PLAYER_PROFILE_TAXONOMY = 'esctt_player_profile';
