@@ -248,3 +248,48 @@ test('an empty published partner entry does not create an empty public section',
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
+
+test('a single published partner renders without list-shape assumptions', function () {
+    partners_load_wordpress();
+
+    $publishedPartners = esctt_get_published_partners();
+    $originalOrders = [];
+    $singlePartner = wp_insert_post([
+        'post_type' => ESCTT_PARTNER_POST_TYPE,
+        'post_status' => 'publish',
+        'post_title' => 'Partenaire unique',
+    ], true);
+
+    foreach ($publishedPartners as $partner) {
+        $originalOrders[$partner->ID] = $partner->menu_order;
+        wp_update_post([
+            'ID' => $partner->ID,
+            'post_status' => 'draft',
+        ]);
+    }
+
+    try {
+        update_post_meta($singlePartner, ESCTT_PARTNER_URL_META, 'https://single.example.test/');
+
+        $markup = do_blocks(partners_block());
+
+        expect($singlePartner)->toBeInt()
+            ->and($markup)->toContain('Partenaire unique')
+            ->and(substr_count($markup, '<li>'))->toBe(1);
+    } finally {
+        if (is_int($singlePartner)) {
+            wp_delete_post($singlePartner, true);
+        }
+
+        foreach ($originalOrders as $partnerId => $menuOrder) {
+            wp_update_post([
+                'ID' => $partnerId,
+                'post_status' => 'publish',
+                'menu_order' => $menuOrder,
+            ]);
+        }
+    }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
