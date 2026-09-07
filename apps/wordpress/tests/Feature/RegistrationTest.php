@@ -6,16 +6,18 @@ function registration_test_load_wordpress(): void
     require_once dirname(__DIR__, 2) . '/web/wp/wp-load.php';
 }
 
-function registration_test_save_document(int $postId, string $url, string $season): void
+function registration_test_save_document(int $postId, string $url, string $season, int $attachmentId = 0): void
 {
     $_POST['esctt_registration_document_nonce'] = wp_create_nonce('esctt_registration_document');
     $_POST['esctt_registration_document_url'] = $url;
     $_POST['esctt_registration_document_season'] = $season;
+    $_POST['esctt_registration_document_attachment_id'] = (string) $attachmentId;
     esctt_save_registration_document($postId, get_post($postId));
     unset(
         $_POST['esctt_registration_document_nonce'],
         $_POST['esctt_registration_document_url'],
         $_POST['esctt_registration_document_season'],
+        $_POST['esctt_registration_document_attachment_id'],
     );
 }
 
@@ -42,18 +44,21 @@ test('registration documents have an admin-managed model and a non-collection po
         ->and($postType->public)->toBeFalse()
         ->and(post_type_supports('esctt_reg_document', 'title'))->toBeTrue()
         ->and(post_type_supports('esctt_reg_document', 'page-attributes'))->toBeTrue()
-        ->and($meta)->toContain('_esctt_registration_document_url', '_esctt_registration_document_season')
+        ->and($meta)->toContain('_esctt_registration_document_url', '_esctt_registration_document_season', '_esctt_registration_document_attachment_id')
         ->and(esctt_membership_documents_policy())->toContain('ne collecte ni ne stocke');
 
     wp_set_current_user(1);
     $urlAuth = $registeredMeta['_esctt_registration_document_url']['auth_callback'];
     $seasonAuth = $registeredMeta['_esctt_registration_document_season']['auth_callback'];
+    $attachmentAuth = $registeredMeta['_esctt_registration_document_attachment_id']['auth_callback'];
     expect($urlAuth(true, '_esctt_registration_document_url', 1))->toBeTrue()
-        ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeTrue();
+        ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeTrue()
+        ->and($attachmentAuth(true, '_esctt_registration_document_attachment_id', 1))->toBeTrue();
 
     wp_set_current_user(0);
     expect($urlAuth(true, '_esctt_registration_document_url', 1))->toBeFalse()
-        ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeFalse();
+        ->and($seasonAuth(true, '_esctt_registration_document_season', 1))->toBeFalse()
+        ->and($attachmentAuth(true, '_esctt_registration_document_attachment_id', 1))->toBeFalse();
     wp_set_current_user(1);
 
     require_once ABSPATH . 'wp-admin/includes/template.php';
@@ -63,6 +68,8 @@ test('registration documents have an admin-managed model and a non-collection po
     $metaBox = ob_get_clean();
 
     expect($metaBox)->toContain('esctt_registration_document_nonce')
+        ->and($metaBox)->toContain('esctt_registration_document_attachment_id')
+        ->and($metaBox)->toContain('Choisir un fichier')
         ->and($metaBox)->toContain('documents génériques de saison')
         ->and($metaBox)->toContain('ne collecte ni ne stocke');
 })->skip(
@@ -194,6 +201,56 @@ test('registration document saves sanitize input and ignore unsafe save contexts
     wp_delete_post($postId, true);
     wp_delete_post($autosaveId, true);
     wp_delete_post($revisionId, true);
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
+test('registration documents can use an uploaded media attachment', function () {
+    registration_test_load_wordpress();
+    wp_set_current_user(1);
+
+    $attachmentId = wp_insert_attachment([
+        'post_type' => 'attachment',
+        'post_status' => 'inherit',
+        'post_title' => 'Règlement intérieur — fichier média',
+        'post_mime_type' => 'application/pdf',
+    ], '', true);
+    $documentId = wp_insert_post([
+        'post_type' => 'esctt_reg_document',
+        'post_status' => 'publish',
+        'post_title' => 'Règlement intérieur — fichier média',
+    ], true);
+    $attachmentUrlFilter = static function ($url, int $currentAttachmentId) use ($attachmentId): string {
+        return $currentAttachmentId === $attachmentId
+            ? 'https://example.com/uploads/reglement.pdf'
+            : (string) $url;
+    };
+    add_filter('wp_get_attachment_url', $attachmentUrlFilter, 10, 2);
+
+    try {
+        expect($attachmentId)->toBeInt()
+            ->and($documentId)->toBeInt();
+
+        registration_test_save_document($documentId, '', '2026–2027', $attachmentId);
+
+        expect(get_post_meta($documentId, '_esctt_registration_document_attachment_id', true))->toBe((string) $attachmentId)
+            ->and(esctt_registration_documents())->toContain([
+                'title' => 'Règlement intérieur — fichier média',
+                'url' => 'https://example.com/uploads/reglement.pdf',
+                'season' => '2026–2027',
+            ]);
+    } finally {
+        remove_filter('wp_get_attachment_url', $attachmentUrlFilter, 10);
+
+        if (is_int($documentId)) {
+            wp_delete_post($documentId, true);
+        }
+
+        if (is_int($attachmentId)) {
+            wp_delete_attachment($attachmentId, true);
+        }
+    }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',

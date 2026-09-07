@@ -18,6 +18,7 @@ defined('ABSPATH') || exit;
 const ESCTT_REGISTRATION_DOCUMENT_POST_TYPE = 'esctt_reg_document';
 const ESCTT_REGISTRATION_DOCUMENT_URL_META = '_esctt_registration_document_url';
 const ESCTT_REGISTRATION_DOCUMENT_SEASON_META = '_esctt_registration_document_season';
+const ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META = '_esctt_registration_document_attachment_id';
 const ESCTT_MEMBERSHIP_DOCUMENTS_POLICY = 'Le site ne collecte ni ne stocke de document d’adhésion.';
 
 /**
@@ -36,6 +37,18 @@ function esctt_registration_document_url(string $url): string
     $url = esc_url_raw($url);
 
     return wp_http_validate_url($url) ? $url : '';
+}
+
+/**
+ * Return the safe public URL for a media attachment.
+ */
+function esctt_registration_document_attachment_url(int $attachmentId): string
+{
+    if ($attachmentId <= 0 || get_post_type($attachmentId) !== 'attachment') {
+        return '';
+    }
+
+    return esctt_registration_document_url((string) wp_get_attachment_url($attachmentId));
 }
 
 /**
@@ -60,7 +73,12 @@ function esctt_registration_documents(): array
 
     foreach ($postIds as $postId) {
         $title = get_the_title($postId);
-        $url = esctt_registration_document_url((string) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_URL_META, true));
+        $attachmentId = (int) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, true);
+        $url = esctt_registration_document_attachment_url($attachmentId);
+
+        if ($url === '') {
+            $url = esctt_registration_document_url((string) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_URL_META, true));
+        }
 
         if ($title === '' || $url === '') {
             continue;
@@ -124,6 +142,13 @@ function esctt_register_registration_document_model(): void
         'sanitize_callback' => 'sanitize_text_field',
         'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
     ]);
+    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, [
+        'single' => true,
+        'type' => 'integer',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'absint',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
 }
 
 /**
@@ -153,6 +178,37 @@ function esctt_content_bootstrap(): void
 }
 
 /**
+ * Load the media picker only on season document edit screens.
+ */
+function esctt_enqueue_registration_document_media(string $hookSuffix): void
+{
+    if (! in_array($hookSuffix, ['post.php', 'post-new.php'], true)) {
+        return;
+    }
+
+    $screen = get_current_screen();
+
+    if (! $screen || $screen->post_type !== ESCTT_REGISTRATION_DOCUMENT_POST_TYPE) {
+        return;
+    }
+
+    wp_enqueue_media();
+    wp_enqueue_script(
+        'esctt-registration-document',
+        plugins_url('assets/registration-document.js', __FILE__),
+        ['media-editor'],
+        '0.1.0',
+        true,
+    );
+    wp_localize_script('esctt-registration-document', 'escttRegistrationDocument', [
+        'title' => __('Choisir un document de saison', 'esctt-content'),
+        'button' => __('Utiliser ce fichier', 'esctt-content'),
+        'empty' => __('Aucun fichier sélectionné.', 'esctt-content'),
+        'selected' => __('Fichier sélectionné : %s', 'esctt-content'),
+    ]);
+}
+
+/**
  * Render the Admin fields for one generic season document.
  */
 function esctt_render_registration_document_meta_box(WP_Post $post): void
@@ -160,6 +216,14 @@ function esctt_render_registration_document_meta_box(WP_Post $post): void
     wp_nonce_field('esctt_registration_document', 'esctt_registration_document_nonce');
     $url = (string) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_URL_META, true);
     $season = (string) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, true);
+    $attachmentId = (int) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, true);
+    $attachmentUrl = esctt_registration_document_attachment_url($attachmentId);
+    $attachmentLabel = $attachmentId > 0 ? (string) get_the_title($attachmentId) : '';
+    $selectedAttachmentId = $attachmentUrl !== '' ? $attachmentId : 0;
+
+    if ($attachmentLabel === '' && $attachmentUrl !== '') {
+        $attachmentLabel = basename((string) parse_url($attachmentUrl, PHP_URL_PATH));
+    }
     ?>
     <p><?php esc_html_e('Donnez au document un nom explicite, par exemple « Règlement intérieur — saison 2026–2027 ».', 'esctt-content'); ?></p>
     <p>
@@ -167,7 +231,14 @@ function esctt_render_registration_document_meta_box(WP_Post $post): void
         <input class="widefat" type="text" id="esctt-registration-document-season" name="esctt_registration_document_season" value="<?php echo esc_attr($season); ?>" placeholder="2026–2027">
     </p>
     <p>
-        <label for="esctt-registration-document-url"><strong><?php esc_html_e('URL du document', 'esctt-content'); ?></strong></label><br>
+        <label for="esctt-registration-document-attachment-id"><strong><?php esc_html_e('Fichier du document', 'esctt-content'); ?></strong></label><br>
+        <input type="hidden" id="esctt-registration-document-attachment-id" name="esctt_registration_document_attachment_id" value="<?php echo esc_attr((string) $selectedAttachmentId); ?>">
+        <button type="button" class="button" id="esctt-registration-document-select"><?php esc_html_e('Choisir un fichier', 'esctt-content'); ?></button>
+        <button type="button" class="button-link-delete" id="esctt-registration-document-remove"<?php echo $selectedAttachmentId > 0 ? '' : ' hidden'; ?>><?php esc_html_e('Retirer le fichier', 'esctt-content'); ?></button>
+        <span class="description" id="esctt-registration-document-file-name"><?php echo $attachmentLabel !== '' ? esc_html(sprintf(__('Fichier sélectionné : %s', 'esctt-content'), $attachmentLabel)) : esc_html__('Aucun fichier sélectionné.', 'esctt-content'); ?></span>
+    </p>
+    <p>
+        <label for="esctt-registration-document-url"><strong><?php esc_html_e('URL de repli du document', 'esctt-content'); ?></strong></label><br>
         <input class="widefat" type="url" id="esctt-registration-document-url" name="esctt_registration_document_url" value="<?php echo esc_attr($url); ?>" placeholder="https://…">
     </p>
     <p class="description"><?php echo esc_html(esctt_membership_documents_policy()); ?> <?php esc_html_e('Gérez ici uniquement des documents génériques de saison.', 'esctt-content'); ?></p>
@@ -193,6 +264,21 @@ function esctt_save_registration_document(int $postId, WP_Post $post): void
 
     if (! wp_verify_nonce($nonce, 'esctt_registration_document')) {
         return;
+    }
+
+    if (isset($_POST['esctt_registration_document_attachment_id'])
+        && is_scalar($_POST['esctt_registration_document_attachment_id'])) {
+        $attachmentId = absint((string) wp_unslash($_POST['esctt_registration_document_attachment_id']));
+
+        if (esctt_registration_document_attachment_url($attachmentId) === '') {
+            $attachmentId = 0;
+        }
+
+        if ($attachmentId === 0) {
+            delete_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META);
+        } else {
+            update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, $attachmentId);
+        }
     }
 
     $url = isset($_POST['esctt_registration_document_url'])
@@ -1421,5 +1507,6 @@ if (function_exists('add_action')) {
     add_action('init', 'esctt_register_partner_meta', 6);
     add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
     add_action('save_post_' . ESCTT_PARTNER_POST_TYPE, 'esctt_save_partner');
+    add_action('admin_enqueue_scripts', 'esctt_enqueue_registration_document_media');
     esctt_content_bootstrap();
 }
