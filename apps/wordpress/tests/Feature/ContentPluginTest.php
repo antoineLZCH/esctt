@@ -6,6 +6,7 @@ test('content plugin bootstrap is loadable', function () {
     }
 
     require_once dirname(__DIR__, 4) . '/packages/esctt-content/esctt-content.php';
+    esctt_register_pricing_fields();
 
     expect(defined('ABSPATH'))->toBeTrue();
 });

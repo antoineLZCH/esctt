@@ -91,3 +91,32 @@ test('public pricing rendering keeps every axis and supplementary value visible'
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
+
+test('pricing helpers preserve explicit empty and nonnumeric values', function () {
+    pricing_test_load_wordpress();
+
+    $model = \App\pricing_model();
+    $empty = \App\pricing_matrix([
+        'tariff_categories' => null,
+        'player_profiles' => null,
+        'jersey_price' => null,
+        'pass_plus_acceptance' => '',
+    ]);
+    $invalid = \App\pricing_matrix([
+        'tariff_categories' => ['not-a-category'],
+        'player_profiles' => [],
+        'jersey_price' => null,
+        'pass_plus_acceptance' => '',
+    ]);
+
+    expect($model['tariff_categories'])->toBeArray()
+        ->and($model['player_profiles'])->toBeArray()
+        ->and(\App\pricing_amount('À confirmer'))->toBe('À confirmer')
+        ->and(\App\pricing_pass_plus_label('yes'))->toBe('Oui')
+        ->and(\App\pricing_pass_plus_label('no'))->toBe('Non')
+        ->and($empty)->toContain('Ajoutez une catégorie tarifaire')
+        ->and($invalid)->toContain('Ajoutez une catégorie tarifaire');
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
