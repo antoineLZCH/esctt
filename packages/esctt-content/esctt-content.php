@@ -20,7 +20,7 @@ const ESCTT_REGISTRATION_DOCUMENT_POST_TYPE = 'esctt_reg_document';
 const ESCTT_REGISTRATION_DOCUMENT_URL_META = '_esctt_registration_document_url';
 const ESCTT_REGISTRATION_DOCUMENT_SEASON_META = '_esctt_registration_document_season';
 const ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META = '_esctt_registration_document_attachment_id';
-const ESCTT_MEMBERSHIP_DOCUMENTS_POLICY = 'Le site ne collecte ni ne stocke de document d’adhésion.';
+const ESCTT_MEMBERSHIP_DOCUMENTS_POLICY = 'Les pièces d’adhésion sont collectées par HelloAsso, pas par le site du club. Le site ne collecte ni ne stocke de document d’adhésion.';
 
 /**
  * Explain the site's document boundary.

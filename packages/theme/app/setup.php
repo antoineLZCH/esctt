@@ -14,6 +14,7 @@ const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
     'esctt/partners',
     'esctt/sport-life',
+    'esctt/helloasso',
     'esctt/practice-schedules',
     'core/paragraph',
     'core/heading',
@@ -53,6 +54,64 @@ function render_sport_life(array $attributes): string
         'helloAssoUrl' => $helloAssoUrl,
         'frontImage' => Vite::asset('resources/images/maillot-face.jpg'),
         'backImage' => Vite::asset('resources/images/maillot-dos.jpg'),
+    ])->render();
+}
+
+function helloasso_membership_url(string $url): ?string
+{
+    $url = esc_url_raw(trim($url));
+    $parts = wp_parse_url($url);
+
+    if (! is_array($parts)) {
+        return null;
+    }
+
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    $host = strtolower((string) ($parts['host'] ?? ''));
+    $path = (string) ($parts['path'] ?? '');
+
+    if ($scheme !== 'https'
+        || ! in_array($host, ['helloasso.com', 'www.helloasso.com'], true)
+        || ! preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/?$~i', $path)) {
+        return null;
+    }
+
+    return $url;
+}
+
+function helloasso_widget_url(string $url): ?string
+{
+    $membershipUrl = helloasso_membership_url($url);
+
+    if ($membershipUrl === null) {
+        return null;
+    }
+
+    $parts = wp_parse_url($membershipUrl);
+    $origin = sprintf(
+        '%s://%s%s',
+        strtolower((string) ($parts['scheme'] ?? 'https')),
+        strtolower((string) ($parts['host'] ?? '')),
+        isset($parts['port']) ? ':' . (int) $parts['port'] : '',
+    );
+    $path = '/' . trim((string) ($parts['path'] ?? ''), '/') . '/widget';
+    $query = isset($parts['query']) ? '?' . (string) $parts['query'] : '';
+
+    return esc_url_raw($origin . $path . $query);
+}
+
+function render_helloasso(array $attributes): string
+{
+    $helloAssoUrl = helloasso_membership_url((string) ($attributes['helloAssoUrl'] ?? ''));
+    $widgetUrl = $helloAssoUrl === null ? null : helloasso_widget_url($helloAssoUrl);
+
+    if ($helloAssoUrl === null || $widgetUrl === null) {
+        return '';
+    }
+
+    return view('sections.helloasso', [
+        'helloAssoUrl' => $helloAssoUrl,
+        'widgetUrl' => $widgetUrl,
     ])->render();
 }
 
@@ -405,6 +464,22 @@ add_action('init', function (): void {
             ],
         ],
         'render_callback' => __NAMESPACE__ . '\\render_sport_life',
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
+
+    register_block_type('esctt/helloasso', [
+        'api_version' => '3',
+        'attributes' => [
+            'helloAssoUrl' => [
+                'type' => 'string',
+                'default' => '',
+            ],
+        ],
+        'render_callback' => __NAMESPACE__ . '\\render_helloasso',
         'supports' => [
             'html' => false,
             'multiple' => false,

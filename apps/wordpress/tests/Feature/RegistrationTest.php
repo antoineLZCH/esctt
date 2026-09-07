@@ -312,6 +312,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
             ->and($rendered)->toContain('SPID Ma Licence')
             ->and($rendered)->not->toContain('<iframe')
             ->and($rendered)->toContain('ne collecte ni ne stocke')
+            ->and($rendered)->toContain('Les pièces d’adhésion sont collectées par HelloAsso, pas par le site du club.')
             ->and($rendered)->toContain('href="https://example.com/reglement.pdf"')
             ->and($rendered)->toContain('Télécharger : Règlement intérieur — saison 2026–2027')
             ->and($stepsPosition)->toBeLessThan($helloAssoPosition);

@@ -93,6 +93,21 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.equal(sportUrlControl.props.type, 'url');
     assert.deepEqual(sportChanges, [{ helloAssoUrl: 'https://www.helloasso.com/associations/example/adhesions/tournoi' }]);
 
+    const helloAsso = registeredBlocks.get('esctt/helloasso');
+    assert.ok(helloAsso);
+    assert.equal(helloAsso.save(), null);
+    const helloAssoChanges = [];
+    const helloAssoEditor = helloAsso.edit({
+        attributes: { helloAssoUrl: '' },
+        setAttributes: (value) => helloAssoChanges.push(value),
+    });
+    const helloAssoUrlControl = helloAssoEditor.children[0].children[0].children[0];
+    helloAssoUrlControl.props.onChange('https://www.helloasso.com/associations/example/adhesions/adhesion-2026');
+
+    assert.equal(helloAssoEditor.children[1].props.className, 'esctt-helloasso esctt-helloasso--editor');
+    assert.equal(helloAssoUrlControl.props.type, 'url');
+    assert.deepEqual(helloAssoChanges, [{ helloAssoUrl: 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026' }]);
+
     delete globalThis.document;
     delete globalThis.window;
 });
