@@ -93,7 +93,7 @@ domReady(() => {
           { title: __('Family tournament registration', 'esctt') },
           createElement(TextControl, {
             label: __('External HelloAsso URL', 'esctt'),
-            help: __('Leave empty until registration opens. Only HelloAsso URLs are rendered publicly.', 'esctt'),
+            help: __('Leave empty until registration opens. Paste the external HelloAsso URL when it is available.', 'esctt'),
             value: attributes.helloAssoUrl,
             onChange: (helloAssoUrl) => setAttributes({ helloAssoUrl }),
             type: 'url',
