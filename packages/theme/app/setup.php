@@ -90,11 +90,11 @@ function helloasso_widget_url(string $url): ?string
     $parts = wp_parse_url($membershipUrl);
     $origin = sprintf(
         '%s://%s%s',
-        strtolower((string) ($parts['scheme'] ?? 'https')),
-        strtolower((string) ($parts['host'] ?? '')),
+        strtolower((string) $parts['scheme']),
+        strtolower((string) $parts['host']),
         isset($parts['port']) ? ':' . (int) $parts['port'] : '',
     );
-    $path = '/' . trim((string) ($parts['path'] ?? ''), '/') . '/widget';
+    $path = '/' . trim((string) $parts['path'], '/') . '/widget';
     $query = isset($parts['query']) ? '?' . (string) $parts['query'] : '';
 
     return esc_url_raw($origin . $path . $query);
