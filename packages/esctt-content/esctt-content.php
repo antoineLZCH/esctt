@@ -2150,5 +2150,5 @@ if (function_exists('add_action')) {
     add_filter('wp_insert_post_data', 'esctt_capture_page_redirects_from_data', 10, 4);
     add_action('wp_insert_post', 'esctt_store_page_redirects_after_insert', 10, 3);
     add_action('template_redirect', 'esctt_redirect_legacy_url', 1);
-    add_action('wp_loaded', 'esctt_register_inventoried_redirects');
+    add_action('template_redirect', 'esctt_register_inventoried_redirects', 0);
 }
