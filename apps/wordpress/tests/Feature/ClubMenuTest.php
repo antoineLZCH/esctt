@@ -42,6 +42,19 @@ test('club content is grouped under one admin menu', function () {
         )
         ->and($optionsPages['esctt-faq']['parent_slug'])->toBe(ESCTT_CLUB_MENU_SLUG)
         ->and($optionsPages['esctt-pricing']['parent_slug'])->toBe(ESCTT_CLUB_MENU_SLUG);
+
+    ob_start();
+    esctt_render_club_menu();
+    $clubPage = ob_get_clean();
+    expect($clubPage)->toContain('>Club<', 'Gérez les contenus du club depuis le sous-menu.');
+
+    wp_set_current_user(0);
+    ob_start();
+    esctt_render_club_menu();
+    $restrictedPage = ob_get_clean();
+    wp_set_current_user($admin->ID);
+
+    expect($restrictedPage)->toBe('');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
