@@ -2,3 +2,11 @@
 @source "../../app/**/*.php";
 @source "../**/*.blade.php";
 @source "../**/*.js";
+
+.esctt-hero {
+  padding: 3rem 1.5rem;
+}
+
+.esctt-hero--compact {
+  padding-block: 1.5rem;
+}

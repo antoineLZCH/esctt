@@ -93,6 +93,7 @@ test('theme composers cover post and comment states', function () {
             'post_title' => 'Posts page',
             'post_status' => 'publish',
             'post_type' => 'page',
+            'post_content' => '<!-- wp:esctt/hero {"title":"Posts page","lock":{"move":true,"remove":true}} /-->',
         ]);
         update_option('page_for_posts', $pageForPosts);
         $setQuery('is_home');

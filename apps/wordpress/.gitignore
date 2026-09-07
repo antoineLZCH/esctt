@@ -8,6 +8,13 @@ web/app/upgrade
 web/app/uploads/*
 !web/app/uploads/.gitkeep
 web/app/cache/*
+!web/app/cache/acorn/
+web/app/cache/acorn/*
+!web/app/cache/acorn/framework/
+web/app/cache/acorn/framework/*
+!web/app/cache/acorn/framework/cache/
+web/app/cache/acorn/framework/cache/*
+!web/app/cache/acorn/framework/cache/.gitkeep
 
 # WordPress
 web/wp
