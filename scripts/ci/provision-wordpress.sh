@@ -102,7 +102,7 @@ fi
 
 "${wp[@]}" option update show_on_front page
 "${wp[@]}" option update permalink_structure '/%postname%/'
-"${wp[@]}" rewrite flush --soft
+"${wp[@]}" rewrite flush
 "${wp[@]}" option update page_on_front "$home_id"
 
 privacy_ids=( $("${wp[@]}" post list --post_type=page --name=confidentialite --field=ID --format=ids) )
