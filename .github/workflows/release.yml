@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  # Release Please uses the Issues API to label and update its release PR.
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update release PR
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Check out released commit
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+
+      - name: Set up PHP
+        if: steps.release.outputs.release_created == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, mysqli, zip
+
+      - name: Set up pnpm
+        if: steps.release.outputs.release_created == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+
+      - name: Set up Node.js
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+
+      - name: Install locked dependencies
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+        working-directory: apps/wordpress
+
+      - name: Build the theme assets
+        if: steps.release.outputs.release_created == 'true'
+        run: pnpm theme:build
+
+      - name: Build and verify the release artifact
+        if: steps.release.outputs.release_created == 'true'
+        run: >-
+          node scripts/release/build-artifact.mjs
+          --version "${{ steps.release.outputs.version }}"
+          --source-commit "${{ steps.release.outputs.sha }}"
+
+      - name: Upload release artifact to the workflow
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: esctt-v${{ steps.release.outputs.version }}
+          path: artifacts/esctt-v${{ steps.release.outputs.version }}.tar.gz
+          if-no-files-found: error
+
+      - name: Attach release artifact to GitHub Release
+        if: steps.release.outputs.release_created == 'true'
+        run: gh release upload "v${{ steps.release.outputs.version }}" "artifacts/esctt-v${{ steps.release.outputs.version }}.tar.gz" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

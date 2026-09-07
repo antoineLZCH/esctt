@@ -7,6 +7,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 const requiredFiles = [
   'pnpm-workspace.yaml',
+  '.release-please-manifest.json',
+  'release-please-config.json',
+  '.github/workflows/release.yml',
+  'scripts/release/build-artifact.mjs',
   'compose.yml',
   'apps/wordpress/package.json',
   'apps/wordpress/server.php',
@@ -56,5 +60,29 @@ assert.match(compose, /healthcheck:/);
 const workspace = fs.readFileSync(path.join(root, 'pnpm-workspace.yaml'), 'utf8');
 assert.match(workspace, /apps\/\*/);
 assert.match(workspace, /packages\/\*/);
+
+const release = readJson('release-please-config.json');
+assert.equal(release['release-type'], 'node');
+assert.equal(release['bump-minor-pre-major'], true);
+assert.equal(release['include-component-in-tag'], false);
+assert.deepEqual(release.packages['.']['extra-files'].map(({ path }) => path), [
+  'packages/theme/package.json',
+  'packages/esctt-content/package.json',
+]);
+
+const manifest = readJson('.release-please-manifest.json');
+const versions = [
+  readJson('package.json').version,
+  readJson('packages/theme/package.json').version,
+  readJson('packages/esctt-content/package.json').version,
+];
+assert.ok(versions.every((version) => /^\d+\.\d+\.\d+$/.test(version)));
+assert.equal(new Set(versions).size, 1);
+assert.equal(manifest['.'], versions[0]);
+
+const releaseWorkflow = fs.readFileSync(path.join(root, '.github/workflows/release.yml'), 'utf8');
+assert.match(releaseWorkflow, /googleapis\/release-please-action@v4/);
+assert.match(releaseWorkflow, /build-artifact\.mjs/);
+assert.match(releaseWorkflow, /release_created/);
 
 console.log('ESCTT WordPress scaffold: OK');

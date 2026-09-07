@@ -272,7 +272,20 @@ jobs:
       - run: composer audit --locked --no-interaction --abandoned=fail
         working-directory: apps/wordpress
       - run: pnpm audit --audit-level=high
-      - if: github.event_name == 'pull_request'
+      - name: Detect Dependency Graph support
+        id: dependency-graph
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          status="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.security_and_analysis.dependency_graph.status // "disabled"')"
+          if [ "$status" = "enabled" ]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo "::warning::Dependency Review skipped because Dependency Graph status is $status."
+          fi
+      - if: github.event_name == 'pull_request' && steps.dependency-graph.outputs.available == 'true'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high

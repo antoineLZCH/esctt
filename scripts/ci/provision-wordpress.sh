@@ -32,8 +32,14 @@ for variable in "${wp_env[@]}"; do
     docker_env+=(--env "$variable")
 done
 
+cache_dir="$root_dir/apps/wordpress/web/app/cache"
+uploads_dir="$root_dir/apps/wordpress/web/app/uploads"
+mkdir -p "$cache_dir/acorn/framework/cache" "$uploads_dir"
+
 wp=(
-    docker run --rm --network host
+    docker run --rm
+    --user "$(id -u):$(id -g)"
+    --network host
     "${docker_env[@]}"
     --volume "$root_dir:/var/www/html"
     --workdir /var/www/html/apps/wordpress
