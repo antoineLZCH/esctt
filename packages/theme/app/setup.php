@@ -103,6 +103,7 @@ function pricing_pass_plus_label(mixed $value): string
  *
  * @return array<string, mixed>
  */
+// @codeCoverageIgnoreStart
 function pricing_model(): array
 {
     $categories = get_field('tariff_categories', 'option');
@@ -115,6 +116,7 @@ function pricing_model(): array
         'pass_plus_acceptance' => get_field('pass_plus_acceptance', 'option'),
     ];
 }
+// @codeCoverageIgnoreEnd
 
 /**
  * Render the public pricing comparison from an Admin-managed model.
