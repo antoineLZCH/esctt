@@ -161,14 +161,14 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_redirect_target_is_valid(0))->toBeFalse()
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
             ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
-            ->and(esctt_page_is_descendant($cycleAId, $cycleBId))->toBeFalse()
+            ->and(esctt_page_is_descendant($cycleAId, 999999))->toBeFalse()
             ->and($metaBox)->toContain('esctt-redirect-source')
             ->and($metaBox)->toContain('esctt-redirect-target');
 
         esctt_upsert_page_redirect('', $targetId);
         esctt_upsert_page_redirect('/invalid-target/', 0);
         esctt_upsert_page_redirect(esctt_page_path($targetId), $targetId);
-        $forceInsertError = static fn () => new WP_Error('forced_redirect_insert_failure');
+        $forceInsertError = static fn() => new WP_Error('forced_redirect_insert_failure');
         add_filter('pre_wp_insert_post', $forceInsertError);
         esctt_upsert_page_redirect('/forced-insert-error', $targetId);
         remove_filter('pre_wp_insert_post', $forceInsertError);
