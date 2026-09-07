@@ -61,3 +61,5 @@ fi
 
 "${wp[@]}" theme activate esctt --skip-plugins
 "${wp[@]}" plugin activate secure-custom-fields esctt-content --skip-themes
+
+chmod -R a+rwX "$cache_dir" "$uploads_dir"
