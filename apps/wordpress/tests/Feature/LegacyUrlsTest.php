@@ -79,7 +79,11 @@ test('a published page slug change records its old hierarchical URL', function (
 test('the verified legacy inventory registers only current destinations', function () {
     legacy_urls_load_wordpress();
 
-    $privacyPageId = legacy_urls_page('Privacy page', 'confidentialite');
+    $privacyPage = get_page_by_path('confidentialite');
+    $privacyPageId = $privacyPage instanceof WP_Post
+        ? (int) $privacyPage->ID
+        : legacy_urls_page('Privacy page', 'confidentialite');
+    $ownsPrivacyPage = ! $privacyPage instanceof WP_Post;
     $privacyRedirect = null;
 
     try {
@@ -104,7 +108,9 @@ test('the verified legacy inventory registers only current destinations', functi
             ]);
     } finally {
         wp_delete_post((int) ($privacyRedirect['post_id'] ?? 0), true);
-        wp_delete_post($privacyPageId, true);
+        if ($ownsPrivacyPage) {
+            wp_delete_post($privacyPageId, true);
+        }
     }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
