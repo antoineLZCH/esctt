@@ -40,3 +40,88 @@
 .esctt-practice-location {
   font-size: 0.95em;
 }
+
+.esctt-pricing {
+  max-width: 70rem;
+  margin-inline: auto;
+  padding: 2rem 1rem;
+}
+
+.esctt-pricing__note,
+.esctt-pricing__profiles,
+.esctt-pricing__extras {
+  margin-block: 1rem;
+}
+
+.esctt-pricing__matrix {
+  display: grid;
+  gap: 1rem;
+}
+
+.esctt-pricing__category {
+  border: 1px solid currentColor;
+  padding: 1rem;
+}
+
+.esctt-pricing__category h3 {
+  margin-block-start: 0;
+}
+
+.esctt-pricing__options,
+.esctt-pricing__extras {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.esctt-pricing__option,
+.esctt-pricing__extras > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding-block: 0.5rem;
+  border-block-end: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.esctt-pricing__option dt,
+.esctt-pricing__option dd,
+.esctt-pricing__extras dt,
+.esctt-pricing__extras dd {
+  margin: 0;
+}
+
+.esctt-pricing__option dt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.esctt-pricing__option dt span + span::before {
+  content: '·';
+  margin-inline-end: 0.5rem;
+}
+
+.esctt-pricing__option dd,
+.esctt-pricing__extras dd {
+  flex: 0 0 auto;
+  font-weight: 700;
+  text-align: end;
+}
+
+@media (max-width: 375px) {
+  .esctt-pricing {
+    padding-inline: 0.75rem;
+  }
+
+  .esctt-pricing__option,
+  .esctt-pricing__extras > div {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .esctt-pricing__option dd,
+  .esctt-pricing__extras dd {
+    text-align: start;
+  }
+}
