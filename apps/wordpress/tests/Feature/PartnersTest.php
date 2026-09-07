@@ -45,6 +45,7 @@ test('partners expose an admin-managed ordered WordPress model', function () {
             ->and(post_type_supports(ESCTT_PARTNER_POST_TYPE, 'page-attributes'))->toBeTrue()
             ->and($partnerId)->toBeInt();
 
+        require_once ABSPATH . 'wp-admin/includes/template.php';
         do_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, get_post($partnerId));
 
         ob_start();
