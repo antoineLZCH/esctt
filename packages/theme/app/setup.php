@@ -63,10 +63,16 @@ function faq_markup(?int $limit = null, string $context = 'faq'): string
         $items = array_slice($items, 0, max(0, $limit));
     }
 
+    $showLink = false;
+
+    if ($limit !== null) {
+        $showLink = count($items) < count($sourceItems);
+    }
+
     return view('partials.faq', [
         'context' => sanitize_key($context),
         'items' => $items,
-        'showLink' => $limit !== null && count($items) < count($sourceItems),
+        'showLink' => $showLink,
     ])->render();
 }
 
