@@ -9,6 +9,7 @@ test('content plugin bootstrap is loadable', function () {
         }
         esctt_content_bootstrap();
         esctt_content_bootstrap();
+        esctt_register_registration_document_model();
     } else {
         if (! defined('ABSPATH')) {
             define('ABSPATH', dirname(__DIR__, 2) . '/web/wp/');
