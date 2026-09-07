@@ -117,6 +117,11 @@ add_filter('register_post_type_args', function (array $args, string $postType): 
         return $args;
     }
 
+    $args['supports'] = array_values(array_unique(array_merge(
+        ['page-attributes', 'revisions'],
+        (array) ($args['supports'] ?? []),
+    )));
+    $args['show_in_nav_menus'] = true;
     $args['template'] = [
         [
             'esctt/hero',

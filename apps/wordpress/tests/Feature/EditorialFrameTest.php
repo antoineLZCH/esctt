@@ -76,6 +76,108 @@ test('pages expose a locked hero template and a limited block catalogue', functi
     'Requires the CI WordPress installation.',
 );
 
+test('native page operations cover drafts, previews, publication, navigation and revisions', function () {
+    editorial_frame_load_wordpress();
+
+    $pageArgs = apply_filters('register_post_type_args', [
+        'supports' => [],
+        'show_in_nav_menus' => false,
+    ], 'page');
+
+    expect($pageArgs['supports'])->toContain('page-attributes', 'revisions')
+        ->and($pageArgs['show_in_nav_menus'])->toBeTrue()
+        ->and(get_post_type_object('page')->show_in_nav_menus)->toBeTrue()
+        ->and(post_type_supports('page', 'revisions'))->toBeTrue();
+
+    $originalUserId = get_current_user_id();
+    $userIds = get_users(['number' => 1, 'fields' => 'ID']);
+    $pageId = 0;
+    $menuId = 0;
+    $previousLocations = get_theme_mod('nav_menu_locations', null);
+    $deploymentTriggered = false;
+    $deploymentHook = static function () use (&$deploymentTriggered): void {
+        $deploymentTriggered = true;
+    };
+    $originalContent = editorial_frame_hero(['title' => 'Page éditoriale']);
+    $revisedContent = editorial_frame_hero(['title' => 'Version publiée']);
+    $slug = 'page-editoriale-' . wp_generate_password(8, false, false);
+
+    try {
+        wp_set_current_user((int) ($userIds[0] ?? 0));
+        add_action('esctt_technical_deploy', $deploymentHook);
+
+        $pageId = wp_insert_post([
+            'post_type' => 'page',
+            'post_status' => 'draft',
+            'post_title' => 'Page éditoriale',
+            'post_name' => $slug,
+            'post_content' => $originalContent,
+        ], true);
+
+        expect($pageId)->toBeInt()
+            ->and(get_post_status($pageId))->toBe('draft')
+            ->and(get_post_field('post_name', $pageId))->toBe($slug)
+            ->and(get_preview_post_link($pageId))->toContain('preview=true');
+
+        $menuId = wp_create_nav_menu('Navigation éditoriale ' . wp_generate_password(8, false, false));
+        $menuItemId = wp_update_nav_menu_item($menuId, 0, [
+            'menu-item-title' => 'Page éditoriale',
+            'menu-item-object' => 'page',
+            'menu-item-object-id' => $pageId,
+            'menu-item-type' => 'post_type',
+            'menu-item-status' => 'publish',
+        ]);
+        $locations = is_array($previousLocations) ? $previousLocations : [];
+        $locations['primary_navigation'] = $menuId;
+        set_theme_mod('nav_menu_locations', $locations);
+        $menuItems = wp_get_nav_menu_items($menuId);
+
+        expect($menuItemId)->toBeInt()
+            ->and($menuItems)->toHaveCount(1)
+            ->and((int) $menuItems[0]->object_id)->toBe($pageId);
+
+        expect(wp_update_post([
+            'ID' => $pageId,
+            'post_status' => 'publish',
+        ], true))->toBe($pageId)
+            ->and(get_post_status($pageId))->toBe('publish')
+            ->and($deploymentTriggered)->toBeFalse();
+
+        $navigation = wp_nav_menu([
+            'theme_location' => 'primary_navigation',
+            'echo' => false,
+        ]);
+
+        expect($navigation)->toContain(get_permalink($pageId));
+
+        $revisionId = wp_save_post_revision($pageId);
+        expect($revisionId)->toBeInt()
+            ->and(wp_update_post([
+                'ID' => $pageId,
+                'post_content' => $revisedContent,
+            ], true))->toBe($pageId)
+            ->and(wp_restore_post_revision($revisionId))->toBe($pageId)
+            ->and(get_post_field('post_content', $pageId))->toBe($originalContent);
+    } finally {
+        remove_action('esctt_technical_deploy', $deploymentHook);
+        wp_set_current_user($originalUserId);
+        if (is_int($menuId) && $menuId > 0) {
+            wp_delete_nav_menu($menuId);
+        }
+        if (is_int($pageId) && $pageId > 0) {
+            wp_delete_post($pageId, true);
+        }
+        if (null === $previousLocations) {
+            remove_theme_mod('nav_menu_locations');
+        } else {
+            set_theme_mod('nav_menu_locations', $previousLocations);
+        }
+    }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
 test('published page content is validated at the REST and database seams', function () {
     editorial_frame_load_wordpress();
 
