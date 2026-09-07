@@ -615,6 +615,8 @@ function esctt_register_pricing_fields(): void
         'menu_slug' => 'esctt-pricing',
         'capability' => 'manage_options',
         'redirect' => false,
+        'icon_url' => 'dashicons-money-alt',
+        'position' => 30
     ]);
 
     acf_add_local_field_group(esctt_pricing_field_group());
@@ -689,6 +691,8 @@ function esctt_register_faq_fields(): void
         'menu_slug' => 'esctt-faq',
         'capability' => 'manage_options',
         'redirect' => false,
+        'icon_url' => 'dashicons-testimonial',
+        'position' => 30
     ]);
 
     acf_add_local_field_group(esctt_faq_field_group());
