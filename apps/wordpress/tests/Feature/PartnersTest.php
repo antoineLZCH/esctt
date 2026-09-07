@@ -61,6 +61,7 @@ test('partners expose an admin-managed ordered WordPress model', function () {
 
         $_POST = [];
         expect(esctt_can_save_partner($partnerId))->toBeFalse();
+        expect(esctt_can_save_partner(0))->toBeFalse();
         esctt_save_partner($partnerId);
 
         $_POST = ['esctt_partner_nonce' => 'invalid'];
@@ -227,6 +228,8 @@ test('an empty published partner entry does not create an empty public section',
         if (is_int($emptyPartner)) {
             wp_delete_post($emptyPartner, true);
         }
+
+        expect(do_blocks(partners_block()))->toBe('');
 
         foreach ($originalOrders as $partnerId => $menuOrder) {
             wp_update_post([
