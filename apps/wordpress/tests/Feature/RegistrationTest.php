@@ -274,13 +274,6 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
         $GLOBALS['post'] = get_post($emptyEditorId);
         setup_postdata($GLOBALS['post']);
         expect((new \App\View\Composers\Registration())->editorContent())->toBe('');
-        if (function_exists('xdebug_get_code_coverage')) {
-            foreach (xdebug_get_code_coverage() as $path => $data) {
-                if (str_ends_with($path, '/packages/theme/app/View/Composers/Registration.php')) {
-                    fwrite(STDERR, "COVERAGE_DEBUG\n" . print_r($data, true));
-                }
-            }
-        }
     } finally {
         wp_reset_postdata();
         $GLOBALS['post'] = $originalPost;
