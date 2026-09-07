@@ -70,6 +70,7 @@ test('home and dedicated FAQ views share source rows and native disclosure seman
 
     try {
         $home = \App\faq_markup(1, 'home');
+        $homeComplete = \App\faq_markup(3, 'home');
         $full = \App\faq_markup(null, 'page');
         $default = \App\faq_markup(null, '');
     } finally {
@@ -80,6 +81,7 @@ test('home and dedicated FAQ views share source rows and native disclosure seman
         ->and($home)->toContain('Question 1')
         ->and($home)->toContain('Answer 1')
         ->and($home)->not->toContain('Question 2')
+        ->and($homeComplete)->not->toContain('Voir toutes les questions')
         ->and($full)->toContain('Question 1')
         ->and($full)->toContain('Answer 1')
         ->and($full)->toContain('Question 2')
