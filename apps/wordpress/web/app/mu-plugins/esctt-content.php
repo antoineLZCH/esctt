@@ -25,3 +25,5 @@ foreach ([
 
     require_once $plugin;
 }
+
+esctt_content_bootstrap();

@@ -76,55 +76,63 @@ function esctt_registration_documents(): array
     return $documents;
 }
 
-add_action('init', function (): void {
-    register_post_type(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, [
-        'labels' => [
-            'name' => __('Documents de saison', 'esctt-content'),
-            'singular_name' => __('Document de saison', 'esctt-content'),
-            'add_new_item' => __('Ajouter un document de saison', 'esctt-content'),
-            'edit_item' => __('Modifier le document de saison', 'esctt-content'),
-            'menu_name' => __('Documents de saison', 'esctt-content'),
-        ],
-        'description' => __('Documents génériques applicables à une saison.', 'esctt-content'),
-        'public' => false,
-        'publicly_queryable' => false,
-        'exclude_from_search' => true,
-        'show_ui' => true,
-        'show_in_menu' => true,
-        'show_in_rest' => true,
-        'menu_icon' => 'dashicons-media-document',
-        'supports' => ['title', 'page-attributes'],
-        'capability_type' => 'post',
-        'map_meta_cap' => true,
-        'rewrite' => false,
-    ]);
+/**
+ * Register the content model hooks after WordPress is available.
+ */
+function esctt_content_bootstrap(): void
+{
+    add_action('init', function (): void {
+        register_post_type(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, [
+            'labels' => [
+                'name' => __('Documents de saison', 'esctt-content'),
+                'singular_name' => __('Document de saison', 'esctt-content'),
+                'add_new_item' => __('Ajouter un document de saison', 'esctt-content'),
+                'edit_item' => __('Modifier le document de saison', 'esctt-content'),
+                'menu_name' => __('Documents de saison', 'esctt-content'),
+            ],
+            'description' => __('Documents génériques applicables à une saison.', 'esctt-content'),
+            'public' => false,
+            'publicly_queryable' => false,
+            'exclude_from_search' => true,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_in_rest' => true,
+            'menu_icon' => 'dashicons-media-document',
+            'supports' => ['title', 'page-attributes'],
+            'capability_type' => 'post',
+            'map_meta_cap' => true,
+            'rewrite' => false,
+        ]);
 
-    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_URL_META, [
-        'single' => true,
-        'type' => 'string',
-        'show_in_rest' => true,
-        'sanitize_callback' => 'esctt_registration_document_url',
-        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
-    ]);
-    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, [
-        'single' => true,
-        'type' => 'string',
-        'show_in_rest' => true,
-        'sanitize_callback' => 'sanitize_text_field',
-        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
-    ]);
-});
+        register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_URL_META, [
+            'single' => true,
+            'type' => 'string',
+            'show_in_rest' => true,
+            'sanitize_callback' => 'esctt_registration_document_url',
+            'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+        ]);
+        register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, [
+            'single' => true,
+            'type' => 'string',
+            'show_in_rest' => true,
+            'sanitize_callback' => 'sanitize_text_field',
+            'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+        ]);
+    });
 
-add_action('add_meta_boxes', function (): void {
-    add_meta_box(
-        'esctt-registration-document-details',
-        __('Document de saison', 'esctt-content'),
-        'esctt_render_registration_document_meta_box',
-        ESCTT_REGISTRATION_DOCUMENT_POST_TYPE,
-        'normal',
-        'high',
-    );
-});
+    add_action('add_meta_boxes', function (): void {
+        add_meta_box(
+            'esctt-registration-document-details',
+            __('Document de saison', 'esctt-content'),
+            'esctt_render_registration_document_meta_box',
+            ESCTT_REGISTRATION_DOCUMENT_POST_TYPE,
+            'normal',
+            'high',
+        );
+    });
+
+    add_action('save_post_' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, 'esctt_save_registration_document', 10, 2);
+}
 
 /**
  * Render the Admin fields for one generic season document.
@@ -147,8 +155,6 @@ function esctt_render_registration_document_meta_box(WP_Post $post): void
     <p class="description"><?php echo esc_html(esctt_membership_documents_policy()); ?> <?php esc_html_e('Gérez ici uniquement des documents génériques de saison.', 'esctt-content'); ?></p>
     <?php
 }
-
-add_action('save_post_' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, 'esctt_save_registration_document', 10, 2);
 
 /**
  * Persist only Admin-managed season metadata; there is no member upload path.
