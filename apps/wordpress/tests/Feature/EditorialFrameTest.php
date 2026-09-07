@@ -80,6 +80,7 @@ test('published page content is validated at the REST and database seams', funct
     editorial_frame_load_wordpress();
 
     $valid = editorial_frame_hero(['compact' => true])
+        . "\n"
         . editorial_frame_block('core/group', editorial_frame_block('core/heading', '<h2>Horaires</h2>', ['level' => 2]));
     $invalidHero = editorial_frame_block('core/paragraph', '<p>Avant le hero</p>') . editorial_frame_hero();
     $unlockedHero = editorial_frame_hero(['lock' => ['move' => true, 'remove' => false]]);

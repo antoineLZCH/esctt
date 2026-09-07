@@ -207,6 +207,10 @@ function page_structure_error(string $content): ?WP_Error
         foreach ($nestedBlocks as $block) {
             $name = $block['blockName'] ?? null;
 
+            if (null === $name && '' === trim((string) ($block['innerHTML'] ?? ''))) {
+                continue;
+            }
+
             if (! in_array($name, $allowedBlocks, true)) {
                 return new WP_Error(
                     'esctt_block_not_allowed',
