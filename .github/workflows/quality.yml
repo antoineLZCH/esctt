@@ -69,7 +69,7 @@ jobs:
       javascript: ${{ steps.filter.outputs.javascript }}
       static_checks: ${{ steps.filter.outputs.static_checks }}
       php_coverage: ${{ steps.filter.outputs.php_coverage }}
-      fallback: ${{ steps.filter.outputs.fallback }}
+      fallback: ${{ steps.classify.outputs.fallback }}
       php_dependencies: ${{ steps.filter.outputs.php_dependencies }}
       node_dependencies: ${{ steps.filter.outputs.node_dependencies }}
     timeout-minutes: 2
@@ -80,6 +80,7 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          list-files: json
           filters: |
             relevant:
               - '.github/**'
@@ -124,28 +125,26 @@ jobs:
               - '**/package.json'
               - '**/pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
-            # Unknown relevant paths fail open to the complete CI matrix.
-            fallback:
-              - '**'
-              - '!.github/**'
-              - '!apps/wordpress/**'
-              - '!packages/theme/**'
-              - '!packages/esctt-content/**'
-              - '!tests/JavaScript/**'
-              - '!tests/e2e/**'
-              - '!playwright.config.js'
-              - '!scripts/ci/**'
-              - '!scripts/release/**'
-              - '!scripts/check-scaffold.mjs'
-              - '!.release-please-manifest.json'
-              - '!release-please-config.json'
-              - '!scripts/check-php-coverage.php'
-              - '!package.json'
-              - '!pnpm-lock.yaml'
-              - '!pnpm-workspace.yaml'
-              - '!compose.yml'
-              - '!**/composer.json'
-              - '!**/composer.lock'
+      - name: Classify unknown relevant paths
+        id: classify
+        if: steps.filter.outputs.relevant == 'true'
+        env:
+          RELEVANT_FILES: ${{ steps.filter.outputs.relevant_files }}
+        run: |
+          changed_files="$(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["RELEVANT_FILES"])))')"
+          fallback=false
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              .github/*|apps/wordpress/*|packages/theme/*|packages/esctt-content/*|tests/JavaScript/*|tests/e2e/*|playwright.config.js|scripts/ci/*|scripts/release/*|scripts/check-scaffold.mjs|scripts/check-php-coverage.php|.release-please-manifest.json|release-please-config.json|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|compose.yml|*/composer.json|*/composer.lock)
+                ;;
+              *)
+                fallback=true
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+          echo "fallback=$fallback" >> "$GITHUB_OUTPUT"
 
   php:
     name: PHP tests and coverage
