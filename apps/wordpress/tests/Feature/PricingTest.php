@@ -104,13 +104,19 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
     ]);
     $invalid = \App\pricing_matrix([
         'tariff_categories' => ['not-a-category'],
-        'player_profiles' => [],
+        'player_profiles' => ['not-a-profile', ['label' => '']],
         'jersey_price' => null,
         'pass_plus_acceptance' => '',
     ]);
 
+    update_field('tariff_categories', [['label' => 'Configured category']], 'option');
+    update_field('player_profiles', [['label' => 'Configured profile']], 'option');
+    $configured = \App\pricing_model();
+
     expect($model['tariff_categories'])->toBeArray()
         ->and($model['player_profiles'])->toBeArray()
+        ->and($configured['tariff_categories'])->toHaveCount(1)
+        ->and($configured['player_profiles'])->toHaveCount(1)
         ->and(\App\pricing_amount('À confirmer'))->toBe('À confirmer')
         ->and(\App\pricing_pass_plus_label('yes'))->toBe('Oui')
         ->and(\App\pricing_pass_plus_label('no'))->toBe('Non')
