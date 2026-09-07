@@ -218,6 +218,7 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
         'post_content' => '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /--><!-- wp:paragraph --><p><a href="https://www.helloasso.com/club">Finaliser</a></p><!-- /wp:paragraph -->',
     ]);
     $originalPost = $GLOBALS['post'] ?? null;
+    $heroOnlyId = 0;
     $GLOBALS['post'] = get_post($postId);
     setup_postdata($GLOBALS['post']);
 
@@ -243,13 +244,21 @@ test('the registration page puts ordered guidance and PPS HTML before editor lin
             ->and($rendered)->toContain('Télécharger : Règlement intérieur — saison 2026–2027')
             ->and($stepsPosition)->toBeLessThan($helloAssoPosition);
 
-        $originalContent = $GLOBALS['post']->post_content;
-        $GLOBALS['post']->post_content = '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /-->';
+        $heroOnlyId = wp_insert_post([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'post_title' => 'Inscriptions avec Hero uniquement',
+            'post_content' => '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /-->',
+        ]);
+        $GLOBALS['post'] = get_post($heroOnlyId);
+        setup_postdata($GLOBALS['post']);
         expect((new \App\View\Composers\Registration())->editorContent())->toBe('');
-        $GLOBALS['post']->post_content = $originalContent;
+        wp_reset_postdata();
+        $GLOBALS['post'] = $originalPost;
     } finally {
         wp_reset_postdata();
         $GLOBALS['post'] = $originalPost;
+        wp_delete_post($heroOnlyId, true);
         wp_delete_post($postId, true);
         wp_delete_post($documentId, true);
     }
