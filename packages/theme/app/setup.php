@@ -9,6 +9,7 @@ namespace App;
 use Illuminate\Support\Facades\Vite;
 use WP_Block_Editor_Context;
 use WP_Error;
+use WP_Post;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
@@ -36,30 +37,39 @@ function page_block_catalog(): array
     return $catalog;
 }
 
+function render_partner_item(WP_Post $partner): ?string
+{
+    $name = trim((string) $partner->post_title);
+
+    if ($name === '') {
+        return null;
+    }
+
+    $url = esctt_sanitize_partner_url((string) get_post_meta($partner->ID, ESCTT_PARTNER_URL_META, true));
+    $label = esc_html($name);
+
+    if ($url !== '') {
+        $label = sprintf(
+            '<a href="%s" target="_blank" rel="noopener noreferrer">%s<span class="screen-reader-text"> (%s)</span></a>',
+            esc_url($url),
+            $label,
+            esc_html__('ouvre dans une nouvelle fenêtre', 'esctt'),
+        );
+    }
+
+    return sprintf('<li>%s</li>', $label);
+}
+
 function render_partners(array $attributes = []): string
 {
     $items = [];
 
     foreach (esctt_get_published_partners() as $partner) {
-        $name = trim((string) $partner->post_title);
+        $item = render_partner_item($partner);
 
-        if ($name === '') {
-            continue;
+        if ($item !== null) {
+            $items[] = $item;
         }
-
-        $url = esctt_sanitize_partner_url((string) get_post_meta($partner->ID, ESCTT_PARTNER_URL_META, true));
-        $label = esc_html($name);
-
-        if ($url !== '') {
-            $label = sprintf(
-                '<a href="%s" target="_blank" rel="noopener noreferrer">%s<span class="screen-reader-text"> (%s)</span></a>',
-                esc_url($url),
-                $label,
-                esc_html__('ouvre dans une nouvelle fenêtre', 'esctt'),
-            );
-        }
-
-        $items[] = sprintf('<li>%s</li>', $label);
     }
 
     if ($items === []) {
