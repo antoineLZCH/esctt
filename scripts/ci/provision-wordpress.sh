@@ -103,6 +103,21 @@ fi
 "${wp[@]}" option update show_on_front page
 "${wp[@]}" option update page_on_front "$home_id"
 
+privacy_ids=( $("${wp[@]}" post list --post_type=page --name=confidentialite --field=ID --format=ids) )
+if ((${#privacy_ids[@]} == 0)); then
+    privacy_id=$("${wp[@]}" post create \
+        --post_type=page \
+        --post_status=publish \
+        --post_title='Confidentialité' \
+        --post_name=confidentialite \
+        --post_content='<p>Politique de confidentialité du club.</p>' \
+        --porcelain)
+else
+    privacy_id="${privacy_ids[0]}"
+fi
+
+"${wp[@]}" eval 'esctt_register_inventoried_redirects();'
+
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
 important_message_args=(
     --post_title='CI important message'
