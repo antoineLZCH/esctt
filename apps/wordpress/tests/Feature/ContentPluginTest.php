@@ -12,7 +12,8 @@ test('content plugin bootstrap is loadable', function () {
 
     expect(defined('ABSPATH'))->toBeTrue()
         ->and(function_exists('esctt_register_content_model'))->toBeTrue()
-        ->and(function_exists('esctt_pricing_field_group'))->toBeTrue();
+        ->and(function_exists('esctt_pricing_field_group'))->toBeTrue()
+        ->and(function_exists('esctt_register_important_message'))->toBeTrue();
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',

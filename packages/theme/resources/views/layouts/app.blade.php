@@ -12,6 +12,8 @@
   <body @php(body_class())>
     @php(wp_body_open())
 
+    @include('partials.important-message')
+
     <div id="app">
       <nav class="skip-links" aria-label="Skip links">
         <a class="skip-link" href="#main">Skip to content</a>

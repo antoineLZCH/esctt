@@ -24,6 +24,16 @@ class App extends Composer
     }
 
     /**
+     * Retrieve the active important message.
+     *
+     * @return array{message: string, detail_url: string, detail_label: ?string}|null
+     */
+    public function importantMessage(): ?array
+    {
+        return esctt_get_active_important_message_data();
+    }
+
+    /**
      * Retrieve the planned public pages for the primary navigation.
      *
      * @return array<int, array{label: string, url: string}>
