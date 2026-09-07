@@ -63,7 +63,7 @@ test('registration documents have an admin-managed model and a non-collection po
     $metaBox = ob_get_clean();
 
     expect($metaBox)->toContain('esctt_registration_document_nonce')
-        ->and($metaBox)->toContain('document génériques de saison')
+        ->and($metaBox)->toContain('documents génériques de saison')
         ->and($metaBox)->toContain('ne collecte ni ne stocke');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
