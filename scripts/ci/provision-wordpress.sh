@@ -139,7 +139,7 @@ ensure_schedule_slot() {
     "${wp[@]}" post meta update "$slot_id" _esctt_practice_start "$start"
     "${wp[@]}" post meta update "$slot_id" _esctt_practice_end "$end"
     "${wp[@]}" post meta update "$slot_id" _esctt_practice_location "$schedule_location_id"
-    "${wp[@]}" post term set "$slot_id" "$profile" esctt_player_profile --by=slug
+    "${wp[@]}" post term set "$slot_id" esctt_player_profile "$profile" --by=slug
     "${wp[@]}" post update "$slot_id" --post_status=publish
 }
 
