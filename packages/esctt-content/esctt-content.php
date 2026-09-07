@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
+const ESCTT_CLUB_MENU_SLUG = 'esctt-club';
 const ESCTT_REGISTRATION_DOCUMENT_POST_TYPE = 'esctt_reg_document';
 const ESCTT_REGISTRATION_DOCUMENT_URL_META = '_esctt_registration_document_url';
 const ESCTT_REGISTRATION_DOCUMENT_SEASON_META = '_esctt_registration_document_season';
@@ -485,7 +486,7 @@ function esctt_register_important_message(): void
 {
     register_post_type(ESCTT_IMPORTANT_MESSAGE_POST_TYPE, [
         'labels' => [
-            'name' => __('Messages importants', 'esctt-content'),
+            'name' => __('Gestion des alertes', 'esctt-content'),
             'singular_name' => __('Message important', 'esctt-content'),
             'add_new_item' => __('Ajouter un message important', 'esctt-content'),
             'edit_item' => __('Modifier le message important', 'esctt-content'),
@@ -493,7 +494,7 @@ function esctt_register_important_message(): void
             'view_item' => __('Voir le message important', 'esctt-content'),
             'search_items' => __('Rechercher des messages importants', 'esctt-content'),
             'not_found' => __('Aucun message important trouvé.', 'esctt-content'),
-            'menu_name' => __('Messages importants', 'esctt-content'),
+            'menu_name' => __('Alertes', 'esctt-content'),
         ],
         'public' => false,
         'publicly_queryable' => false,
@@ -840,12 +841,24 @@ function esctt_register_content_model(): void
         ],
         'public' => false,
         'show_ui' => true,
+        'show_in_menu' => false,
         'show_in_rest' => true,
         'show_admin_column' => true,
         'hierarchical' => true,
         'rewrite' => false,
         'query_var' => false,
     ]);
+}
+
+function esctt_register_club_taxonomy_menu(): void
+{
+    add_submenu_page(
+        ESCTT_CLUB_MENU_SLUG,
+        __('Profils de joueur', 'esctt-content'),
+        __('Profils de joueur', 'esctt-content'),
+        'manage_categories',
+        'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE,
+    );
 }
 
 function esctt_seed_player_profiles(): void
@@ -1352,6 +1365,7 @@ function esctt_register_pricing_fields(): void
         'menu_title' => __('Tarifs', 'esctt-content'),
         'menu_slug' => 'esctt-pricing',
         'capability' => 'manage_options',
+        'parent_slug' => ESCTT_CLUB_MENU_SLUG,
         'redirect' => false,
         'icon_url' => 'dashicons-money-alt',
         'position' => 30
@@ -1428,6 +1442,7 @@ function esctt_register_faq_fields(): void
         'menu_title' => __('FAQ', 'esctt-content'),
         'menu_slug' => 'esctt-faq',
         'capability' => 'manage_options',
+        'parent_slug' => ESCTT_CLUB_MENU_SLUG,
         'redirect' => false,
         'icon_url' => 'dashicons-testimonial',
         'position' => 30
@@ -1502,7 +1517,91 @@ if (function_exists('add_action')) {
 }
 // @codeCoverageIgnoreEnd
 
+function esctt_render_club_menu(): void
+{
+    if (! current_user_can('edit_posts')) {
+        return;
+    }
+
+    global $submenu;
+    $clubItems = array_values(array_filter(
+        $submenu[ESCTT_CLUB_MENU_SLUG] ?? [],
+        static fn(array $item): bool => ($item[2] ?? '') !== ESCTT_CLUB_MENU_SLUG,
+    ));
+    $icons = [
+        'edit.php?post_type=' . ESCTT_LOCATION_POST_TYPE => 'dashicons-location',
+        'edit.php?post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-clock',
+        'edit.php?post_type=' . ESCTT_IMPORTANT_MESSAGE_POST_TYPE => 'dashicons-warning',
+        'edit.php?post_type=' . ESCTT_PARTNER_POST_TYPE => 'dashicons-groups',
+        'edit.php?post_type=' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE => 'dashicons-media-document',
+        'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-tag',
+        'esctt-faq' => 'dashicons-testimonial',
+        'esctt-pricing' => 'dashicons-money-alt',
+    ];
+    ?>
+    <div class="wrap esctt-club-menu">
+        <h1><?php esc_html_e('Club', 'esctt-content'); ?></h1>
+        <p class="esctt-club-menu__intro"><?php esc_html_e('Gérez les contenus du club depuis cette page ou le sous-menu.', 'esctt-content'); ?></p>
+        <nav class="esctt-club-menu__grid" aria-label="<?php esc_attr_e('Navigation du club', 'esctt-content'); ?>">
+            <?php foreach ($clubItems as $item) :
+                $slug = (string) ($item[2] ?? '');
+                $title = (string) ($item[0] ?? '');
+                $url = str_contains($slug, '.php')
+                    ? admin_url($slug)
+                    : add_query_arg('page', $slug, admin_url('admin.php'));
+                $icon = $icons[$slug] ?? 'dashicons-admin-generic';
+                ?>
+                <a class="esctt-club-menu__card" href="<?php echo esc_url($url); ?>">
+                    <span class="dashicons <?php echo esc_attr($icon); ?> esctt-club-menu__icon" aria-hidden="true"></span>
+                    <span class="esctt-club-menu__title"><?php echo esc_html($title); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+    </div>
+    <?php
+}
+
+function esctt_enqueue_club_menu_styles(string $hook): void
+{
+    if ($hook !== 'toplevel_page_' . ESCTT_CLUB_MENU_SLUG) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'esctt-club-menu',
+        plugins_url('assets/club-menu.css', __FILE__),
+        [],
+        '0.1.0',
+    );
+}
+
+function esctt_register_club_menu(): void
+{
+    add_menu_page(
+        __('Club', 'esctt-content'),
+        __('Club', 'esctt-content'),
+        'edit_posts',
+        ESCTT_CLUB_MENU_SLUG,
+        'esctt_render_club_menu',
+        'dashicons-groups',
+        30,
+    );
+}
+
+if (function_exists('add_filter')) {
+    add_filter('register_post_type_args', static function (array $args, string $postType): array {
+        if (str_starts_with($postType, 'esctt_') && ($args['show_in_menu'] ?? true) !== false) {
+            $args['show_in_menu'] = ESCTT_CLUB_MENU_SLUG;
+        }
+
+        return $args;
+    }, 10, 2);
+}
+
 if (function_exists('add_action')) {
+    add_action('admin_menu', 'esctt_register_club_menu', 9);
+    add_action('admin_menu', 'esctt_register_club_taxonomy_menu', 15);
+    add_action('admin_enqueue_scripts', 'esctt_enqueue_club_menu_styles');
     add_action('init', 'esctt_register_partner', 5);
     add_action('init', 'esctt_register_partner_meta', 6);
     add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
