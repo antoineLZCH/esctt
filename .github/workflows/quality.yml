@@ -2,8 +2,38 @@ name: Quality gates
 
 on:
   pull_request:
+    paths:
+      - '.github/**'
+      - 'apps/wordpress/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yml'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
   push:
     branches: [main]
+    paths:
+      - '.github/**'
+      - 'apps/wordpress/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yml'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -31,15 +61,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
-      shared: ${{ steps.filter.outputs.shared }}
+      ci: ${{ steps.filter.outputs.ci }}
       app: ${{ steps.filter.outputs.app }}
       theme: ${{ steps.filter.outputs.theme }}
       plugin: ${{ steps.filter.outputs.plugin }}
+      browser: ${{ steps.filter.outputs.browser }}
+      javascript: ${{ steps.filter.outputs.javascript }}
+      static_checks: ${{ steps.filter.outputs.static_checks }}
+      php_coverage: ${{ steps.filter.outputs.php_coverage }}
+      fallback: ${{ steps.classify.outputs.fallback }}
+      php_dependencies: ${{ steps.filter.outputs.php_dependencies }}
+      node_dependencies: ${{ steps.filter.outputs.node_dependencies }}
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          list-files: json
           filters: |
             relevant:
               - '.github/**'
@@ -52,14 +93,11 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - 'compose.yml'
-            shared:
+              - '.release-please-manifest.json'
+              - 'release-please-config.json'
+            ci:
               - '.github/**'
-              - 'scripts/**'
-              - 'tests/**'
-              - 'playwright.config.js'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
+              - 'scripts/ci/**'
               - 'compose.yml'
             app:
               - 'apps/wordpress/**'
@@ -67,17 +105,62 @@ jobs:
               - 'packages/theme/**'
             plugin:
               - 'packages/esctt-content/**'
+            browser:
+              - 'tests/e2e/**'
+              - 'playwright.config.js'
+            javascript:
+              - 'tests/JavaScript/**'
+              - 'packages/theme/resources/js/**'
+              - 'scripts/release/**'
+            static_checks:
+              - 'scripts/check-scaffold.mjs'
+              - '.release-please-manifest.json'
+              - 'release-please-config.json'
+            php_coverage:
+              - 'scripts/check-php-coverage.php'
+            php_dependencies:
+              - '**/composer.json'
+              - '**/composer.lock'
+            node_dependencies:
+              - '**/package.json'
+              - '**/pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+      - name: Classify unknown relevant paths
+        id: classify
+        if: steps.filter.outputs.relevant == 'true'
+        env:
+          RELEVANT_FILES: ${{ steps.filter.outputs.relevant_files }}
+        run: |
+          changed_files="$(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["RELEVANT_FILES"])))')"
+          fallback=false
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            case "$file" in
+              .github/*|apps/wordpress/*|packages/theme/*|packages/esctt-content/*|tests/JavaScript/*|tests/e2e/*|playwright.config.js|scripts/ci/*|scripts/release/*|scripts/check-scaffold.mjs|scripts/check-php-coverage.php|.release-please-manifest.json|release-please-config.json|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|compose.yml|*/composer.json|*/composer.lock)
+                ;;
+              *)
+                fallback=true
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+          echo "fallback=$fallback" >> "$GITHUB_OUTPUT"
 
   php:
     name: PHP tests and coverage
     needs: changes
     if: >-
       needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' ||
+      (needs.changes.outputs.ci == 'true' ||
        needs.changes.outputs.app == 'true' ||
        needs.changes.outputs.theme == 'true' ||
-       needs.changes.outputs.plugin == 'true')
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.php_coverage == 'true' ||
+       needs.changes.outputs.php_dependencies == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     services:
       database:
         image: mariadb:11.4
@@ -95,6 +178,8 @@ jobs:
           --health-retries=20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -107,77 +192,38 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm setup:site
       - run: bash scripts/ci/provision-wordpress.sh
-      - run: ESCTT_WORDPRESS_TESTS=1 pnpm --filter @esctt/wordpress test
       - run: pnpm test:coverage
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: php-coverage
           path: apps/wordpress/build/coverage
           if-no-files-found: ignore
-
-  theme:
-    name: Theme gate
-    needs: changes
-    if: >-
-      needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.theme == 'true')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.12.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test:js
-      - run: pnpm theme:build
-
-  plugin:
-    name: Plugin gate
-    needs: changes
-    if: >-
-      needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.plugin == 'true')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: mbstring, intl, mysqli, zip
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.12.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @esctt/wordpress composer:install
-      - run: pnpm --filter @esctt/esctt-content check
-      - run: pnpm --filter @esctt/wordpress test
+          retention-days: 3
 
   public:
-    name: Public / ${{ matrix.gate }}
+    name: Public browser gates
     needs: changes
     if: >-
       needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' ||
+      (needs.changes.outputs.ci == 'true' ||
        needs.changes.outputs.app == 'true' ||
        needs.changes.outputs.theme == 'true' ||
-       needs.changes.outputs.plugin == 'true')
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.browser == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        gate: [e2e, a11y]
+    timeout-minutes: 15
     services:
       database:
         image: mariadb:11.4
@@ -195,6 +241,8 @@ jobs:
           --health-retries=20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -206,26 +254,52 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-v1-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm setup:site
       - run: bash scripts/ci/provision-wordpress.sh
       - run: bash scripts/ci/start-wordpress.sh
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:${{ matrix.gate }}
-      - if: always()
+      - run: pnpm test:e2e
+      - run: pnpm test:a11y
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-${{ matrix.gate }}
+          name: playwright
           path: artifacts/playwright
           if-no-files-found: ignore
+          retention-days: 3
 
   static:
     name: Static analysis
     needs: changes
-    if: needs.changes.outputs.relevant == 'true'
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.ci == 'true' ||
+       needs.changes.outputs.app == 'true' ||
+       needs.changes.outputs.theme == 'true' ||
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.static_checks == 'true' ||
+       needs.changes.outputs.php_dependencies == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -237,17 +311,49 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm --filter @esctt/wordpress composer:install
       - run: pnpm check:scaffold
       - run: pnpm check:php
       - run: pnpm check:static
+
+  javascript:
+    name: JavaScript tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.ci == 'true' ||
+       needs.changes.outputs.javascript == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm test:js
 
   security:
     name: Security checks
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -255,26 +361,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.outputs.php_dependencies == 'true'
         with:
           php-version: '8.4'
       - uses: pnpm/action-setup@v4
+        if: needs.changes.outputs.node_dependencies == 'true'
         with:
           version: 10.33.1
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.node_dependencies == 'true'
         with:
           node-version: 22.12.0
           cache: pnpm
       - run: composer audit --locked --no-interaction --abandoned=fail
+        if: needs.changes.outputs.php_dependencies == 'true'
         working-directory: apps/wordpress
       - run: pnpm audit --audit-level=high
+        if: needs.changes.outputs.node_dependencies == 'true'
       - name: Detect Dependency Graph support
         id: dependency-graph
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          (needs.changes.outputs.php_dependencies == 'true' ||
+           needs.changes.outputs.node_dependencies == 'true')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -285,7 +400,9 @@ jobs:
             echo 'available=false' >> "$GITHUB_OUTPUT"
             echo "::warning::Dependency Review skipped because Dependency Graph status is $status."
           fi
-      - if: github.event_name == 'pull_request' && steps.dependency-graph.outputs.available == 'true'
+      - if: >-
+          github.event_name == 'pull_request' &&
+          steps.dependency-graph.outputs.available == 'true'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
@@ -293,8 +410,9 @@ jobs:
   quality:
     name: Quality result
     if: always()
-    needs: [changes, php, theme, plugin, public, static, security]
+    needs: [changes, php, public, static, javascript, security]
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Require selected gates to pass
         if: >-
