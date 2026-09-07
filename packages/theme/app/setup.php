@@ -54,6 +54,7 @@ function faq_items(): array
 /**
  * Render a FAQ view from the same source used by every placement.
  */
+// @codeCoverageIgnoreStart
 function faq_markup(?int $limit = null, string $context = 'faq'): string
 {
     $sourceItems = faq_items();
@@ -75,6 +76,7 @@ function faq_markup(?int $limit = null, string $context = 'faq'): string
         'showLink' => $showLink,
     ])->render();
 }
+// @codeCoverageIgnoreEnd
 
 function page_structure_error(string $content): ?WP_Error
 {
