@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/partners',
     'esctt/sport-life',
     'esctt/practice-schedules',
     'core/paragraph',
@@ -35,6 +36,13 @@ function page_block_catalog(): array
     $catalog = apply_filters('esctt_page_block_catalog', PAGE_BLOCK_CATALOG);
 
     return $catalog;
+}
+
+function render_partners(array $attributes = []): string
+{
+    return view('sections.partners', [
+        'partners' => esctt_get_published_partners(),
+    ])->render();
 }
 
 function render_sport_life(array $attributes): string
@@ -371,6 +379,16 @@ add_action('init', function (): void {
                 ]),
             );
         },
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
+
+    register_block_type('esctt/partners', [
+        'api_version' => '3',
+        'render_callback' => __NAMESPACE__ . '\\render_partners',
         'supports' => [
             'html' => false,
             'multiple' => false,

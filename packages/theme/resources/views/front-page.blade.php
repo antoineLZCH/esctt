@@ -34,6 +34,8 @@
     </div>
   </section>
 
+  {!! \App\render_partners() !!}
+
   <section id="horaires" class="home-section home-section-muted site-shell skip-target" tabindex="-1" aria-labelledby="schedules-title">
     <p class="eyebrow">Pratiquer</p>
     <h2 id="schedules-title">Horaires et lieux</h2>

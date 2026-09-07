@@ -15,6 +15,20 @@ test('the public home page is served by WordPress', async ({ page }) => {
     await expect(page.locator('a[href="#main"]')).toHaveText('Skip to content');
 });
 
+test('the public partner list exposes named external links', async ({ page }) => {
+    await page.goto('/');
+
+    const partners = page.locator('.esctt-partners');
+    const partnerLink = partners.getByRole('link', {
+        name: /Partenaire de test.*ouvre dans une nouvelle fenêtre/,
+    });
+
+    await expect(partners.getByRole('heading', { name: 'Partenaires' })).toBeVisible();
+    await expect(partnerLink).toHaveAttribute('href', 'https://partner.example.test/');
+    await expect(partnerLink).toHaveAttribute('target', '_blank');
+    await expect(partnerLink).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
 for (const viewport of viewports) {
     test(`the home page keeps its content at ${viewport.label}`, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: 900 });

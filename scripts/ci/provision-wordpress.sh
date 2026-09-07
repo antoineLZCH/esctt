@@ -63,6 +63,46 @@ fi
 "${wp[@]}" theme activate esctt --skip-plugins
 "${wp[@]}" plugin activate secure-custom-fields esctt-content --skip-themes
 
+partner_ids=( $("${wp[@]}" post list --post_type=esctt_partner --name=partner-test --field=ID --format=ids) )
+if ((${#partner_ids[@]} == 0)); then
+    partner_id=$("${wp[@]}" post create \
+        --post_type=esctt_partner \
+        --post_status=publish \
+        --post_title='Partenaire de test' \
+        --post_name=partner-test \
+        --menu_order=1 \
+        --porcelain)
+else
+    partner_id="${partner_ids[0]}"
+    "${wp[@]}" post update "$partner_id" \
+        --post_status=publish \
+        --post_title='Partenaire de test' \
+        --menu_order=1
+fi
+
+"${wp[@]}" post meta update "$partner_id" _esctt_partner_url 'https://partner.example.test/'
+
+home_ids=( $("${wp[@]}" post list --post_type=page --name=accueil --field=ID --format=ids) )
+home_content='<!-- wp:esctt/hero {"title":"Accueil","lock":{"move":true,"remove":true}} /--><!-- wp:esctt/partners /-->'
+if ((${#home_ids[@]} == 0)); then
+    home_id=$("${wp[@]}" post create \
+        --post_type=page \
+        --post_status=publish \
+        --post_title='Accueil' \
+        --post_name=accueil \
+        --post_content="$home_content" \
+        --porcelain)
+else
+    home_id="${home_ids[0]}"
+    "${wp[@]}" post update "$home_id" \
+        --post_status=publish \
+        --post_title='Accueil' \
+        --post_content="$home_content"
+fi
+
+"${wp[@]}" option update show_on_front page
+"${wp[@]}" option update page_on_front "$home_id"
+
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
 important_message_args=(
     --post_title='CI important message'

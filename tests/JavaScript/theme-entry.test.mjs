@@ -51,6 +51,11 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.ok(hero);
     assert.equal(hero.save(), null);
 
+    const partners = registeredBlocks.get('esctt/partners');
+    assert.ok(partners);
+    assert.equal(partners.save(), null);
+    assert.equal(partners.edit({}).props.className, 'esctt-partners');
+
     const schedules = registeredBlocks.get('esctt/practice-schedules');
     assert.ok(schedules);
     assert.equal(schedules.save(), null);

@@ -61,6 +61,42 @@ summary:focus-visible,
   padding-block: 1.5rem;
 }
 
+.esctt-partners {
+  padding: 3rem 1.5rem;
+}
+
+.esctt-partners ul {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.esctt-partners .screen-reader-text {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.esctt-partners__logo-wrap {
+  max-width: 12rem;
+}
+
+.esctt-partners__logo {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.esctt-partners__description p:last-child {
+  margin-bottom: 0;
+}
+
 .esctt-important-message {
   background: #fef3c7;
   border-block: 2px solid #92400e;
