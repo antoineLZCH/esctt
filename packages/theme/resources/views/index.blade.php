@@ -3,6 +3,10 @@
 @section('content')
   @include('partials.page-header')
 
+  @if (is_front_page() || is_home())
+    {!! \App\faq_markup(3, 'home') !!}
+  @endif
+
   @if (! have_posts())
     <x-alert type="warning">
       {!! __('Sorry, no results were found.', 'esctt') !!}
