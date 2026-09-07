@@ -83,6 +83,17 @@ test('theme composers cover post and comment states', function () {
     try {
         $app = new \App\View\Composers\App();
         expect($app->siteName())->toBe(get_bloginfo('name', 'display'));
+        $navigation = $app->clubNavigation();
+        expect($navigation)->toHaveCount(8)
+            ->and($navigation[0]['label'])->toBe('Accueil')
+            ->and($navigation[1]['url'])->toEndWith('/#horaires')
+            ->and($navigation[2]['url'])->toEndWith('/#tarifs')
+            ->and($navigation[3]['url'])->toEndWith('/inscriptions/')
+            ->and($navigation[4]['url'])->toEndWith('/faq/')
+            ->and($navigation[5]['url'])->toEndWith('/contact/')
+            ->and($navigation[6]['url'])->toEndWith('/mentions-legales/')
+            ->and($navigation[7]['url'])->toEndWith('/confidentialite/')
+            ->and($app->footerNavigation())->toBe($navigation);
 
         $post = new \App\View\Composers\Post();
         $setView($post, 'partials.content');
