@@ -132,6 +132,8 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         'post_title' => 'Draft redirect fixture',
     ], true);
     $originalPost = $_POST;
+    $originalUserId = get_current_user_id();
+    wp_set_current_user(1);
 
     try {
         esctt_register_redirect_model();
@@ -195,6 +197,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_redirect_location('/new/?existing=1#fragment', '/old/?utm_source=legacy'))->toBe('/new/?existing=1&utm_source=legacy#fragment');
     } finally {
         $_POST = $originalPost;
+        wp_set_current_user($originalUserId);
         wp_delete_post($redirectId, true);
         wp_delete_post($draftId, true);
         wp_delete_post($targetId, true);
