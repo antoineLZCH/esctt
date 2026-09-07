@@ -86,7 +86,7 @@ class Registration extends Composer
     {
         $blocks = parse_blocks((string) get_the_content());
         return implode('', array_map(
-            static fn (array $block): string => render_block($block),
+            'render_block',
             array_slice($blocks, 1),
         ));
     }
