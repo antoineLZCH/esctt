@@ -108,14 +108,22 @@ test('admins can edit and inspect location and slot fields', function () {
 
         expect($locationFields)->toContain('5 rue du Test, Colombes', 'required')
             ->and(esctt_location_is_valid($locationId))->toBeTrue()
-            ->and(esctt_location_is_valid(0))->toBeFalse();
+            ->and(esctt_location_is_valid(0))->toBeFalse()
+            ->and(esctt_practice_slot_is_valid(0))->toBeFalse();
 
         $_POST['esctt_location_address'] = '';
         esctt_save_location($locationId);
         expect(get_post_meta($locationId, '_esctt_location_address', true))->toBe('');
 
-        $_POST['esctt_location_address'] = '5 rue du Test, Colombes';
+        $_POST['esctt_location_address'] = [];
         esctt_save_location($locationId);
+
+        $_POST = [
+            'esctt_location_nonce' => wp_create_nonce('esctt_save_location'),
+            'esctt_location_address' => '5 rue du Test, Colombes',
+        ];
+        esctt_save_location($locationId);
+        esctt_register_content_meta_boxes();
         $_POST = [
             'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
             'esctt_practice_day' => '2',
@@ -146,6 +154,11 @@ test('admins can edit and inspect location and slot fields', function () {
             ->and(get_post_meta($slotId, '_esctt_practice_start', true))->toBe('')
             ->and(get_post_meta($slotId, '_esctt_practice_end', true))->toBe('')
             ->and(get_post_meta($slotId, '_esctt_practice_location', true))->toBe('');
+
+        $_POST = [
+            'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
+        ];
+        esctt_save_practice_slot($slotId);
     } finally {
         $_POST = $previousPost;
         wp_delete_post($slotId, true);
@@ -227,6 +240,17 @@ test('published slots render by day and start time with live location and profil
         wp_delete_post($tuesdaySlotId, true);
         wp_delete_post($locationId, true);
     }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
+test('autosave requests cannot save content fields', function () {
+    if (! defined('DOING_AUTOSAVE')) {
+        define('DOING_AUTOSAVE', true);
+    }
+
+    expect(esctt_can_save_content_post(0, 'nonce', 'action'))->toBeFalse();
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
