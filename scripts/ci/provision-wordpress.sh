@@ -117,8 +117,6 @@ else
     privacy_id="${privacy_ids[0]}"
 fi
 
-"${wp[@]}" eval 'esctt_register_inventoried_redirects();'
-
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
 important_message_args=(
     --post_title='CI important message'
