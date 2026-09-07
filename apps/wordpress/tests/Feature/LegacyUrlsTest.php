@@ -123,6 +123,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
     $targetId = legacy_urls_page('Redirect target', 'redirect-target-' . wp_generate_password(6, false, false));
     $loopAId = legacy_urls_page('Redirect loop A', 'redirect-loop-a-' . wp_generate_password(6, false, false));
     $loopBId = legacy_urls_page('Redirect loop B', 'redirect-loop-b-' . wp_generate_password(6, false, false));
+    $emptyPageId = legacy_urls_page('Redirect empty slug', 'redirect-empty-' . wp_generate_password(6, false, false));
     $redirectId = wp_insert_post([
         'post_type' => ESCTT_REDIRECT_POST_TYPE,
         'post_status' => 'publish',
@@ -162,7 +163,9 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
     update_post_meta($loopARedirectId, ESCTT_REDIRECT_TARGET_META, $loopBId);
     global $wpdb;
     $wpdb->update($wpdb->posts, ['post_parent' => $cycleBId], ['ID' => $cycleAId]);
+    $wpdb->update($wpdb->posts, ['post_name' => ''], ['ID' => $emptyPageId]);
     clean_post_cache($cycleAId);
+    clean_post_cache($emptyPageId);
     $draftPageId = 0;
     $originalPost = $_POST;
     $originalUserId = get_current_user_id();
@@ -223,6 +226,14 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         }
         $GLOBALS['esctt_page_redirect_snapshot'][$draftPageId] = [$draftPageId => '/draft-page'];
         esctt_store_page_redirects($draftPageId, $draftPage);
+        $emptyPage = get_post($emptyPageId);
+        if (! $emptyPage instanceof WP_Post) {
+            throw new RuntimeException('Unable to load empty-slug fixture.');
+        }
+        expect(esctt_page_path($emptyPage))->toBe('')
+            ->and(esctt_redirect_target_is_valid($draftPageId))->toBeFalse();
+        $GLOBALS['esctt_page_redirect_snapshot'][$emptyPageId] = [$emptyPageId => '/empty-page'];
+        esctt_store_page_redirects($emptyPageId, $targetPage);
         $GLOBALS['esctt_page_redirect_snapshot'][999999] = [999999 => '/missing-page'];
         esctt_store_page_redirects(999999, $targetPage);
         $_POST = [];
@@ -296,6 +307,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         wp_delete_post($cycleBId, true);
         wp_delete_post($revisionId, true);
         wp_delete_post($draftPageId, true);
+        wp_delete_post($emptyPageId, true);
         wp_delete_post((int) ($loopBRedirect['post_id'] ?? 0), true);
         wp_delete_post($loopARedirectId, true);
         wp_delete_post($loopAId, true);
