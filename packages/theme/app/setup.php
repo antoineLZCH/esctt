@@ -41,7 +41,7 @@ function render_partners(array $attributes = []): string
     $items = [];
 
     foreach (esctt_get_published_partners() as $partner) {
-        $name = trim(get_the_title($partner));
+        $name = trim((string) $partner->post_title);
 
         if ($name === '') {
             continue;
