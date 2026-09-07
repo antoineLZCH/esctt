@@ -46,6 +46,11 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.ok(hero);
     assert.equal(hero.save(), null);
 
+    const schedules = registeredBlocks.get('esctt/practice-schedules');
+    assert.ok(schedules);
+    assert.equal(schedules.save(), null);
+    assert.match(schedules.edit().children[0].children[0], /horaires/i);
+
     const changes = [];
     const regular = hero.edit({
         attributes: { compact: false, title: 'Club' },

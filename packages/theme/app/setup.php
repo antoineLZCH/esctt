@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/practice-schedules',
     'core/paragraph',
     'core/heading',
     'core/image',
