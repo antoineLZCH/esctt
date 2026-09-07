@@ -13,6 +13,8 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'compose.yml'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
   push:
     branches: [main]
     paths:
@@ -26,6 +28,8 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'compose.yml'
+      - '.release-please-manifest.json'
+      - 'release-please-config.json'
 
 concurrency:
   group: quality-${{ github.event.pull_request.number || github.ref }}
@@ -57,10 +61,15 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
-      shared: ${{ steps.filter.outputs.shared }}
+      ci: ${{ steps.filter.outputs.ci }}
       app: ${{ steps.filter.outputs.app }}
       theme: ${{ steps.filter.outputs.theme }}
       plugin: ${{ steps.filter.outputs.plugin }}
+      browser: ${{ steps.filter.outputs.browser }}
+      javascript: ${{ steps.filter.outputs.javascript }}
+      static_checks: ${{ steps.filter.outputs.static_checks }}
+      php_coverage: ${{ steps.filter.outputs.php_coverage }}
+      fallback: ${{ steps.filter.outputs.fallback }}
       php_dependencies: ${{ steps.filter.outputs.php_dependencies }}
       node_dependencies: ${{ steps.filter.outputs.node_dependencies }}
     timeout-minutes: 2
@@ -83,14 +92,11 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - 'compose.yml'
-            shared:
+              - '.release-please-manifest.json'
+              - 'release-please-config.json'
+            ci:
               - '.github/**'
-              - 'scripts/**'
-              - 'tests/**'
-              - 'playwright.config.js'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
+              - 'scripts/ci/**'
               - 'compose.yml'
             app:
               - 'apps/wordpress/**'
@@ -98,6 +104,19 @@ jobs:
               - 'packages/theme/**'
             plugin:
               - 'packages/esctt-content/**'
+            browser:
+              - 'tests/e2e/**'
+              - 'playwright.config.js'
+            javascript:
+              - 'tests/JavaScript/**'
+              - 'packages/theme/resources/js/**'
+              - 'scripts/release/**'
+            static_checks:
+              - 'scripts/check-scaffold.mjs'
+              - '.release-please-manifest.json'
+              - 'release-please-config.json'
+            php_coverage:
+              - 'scripts/check-php-coverage.php'
             php_dependencies:
               - '**/composer.json'
               - '**/composer.lock'
@@ -105,16 +124,42 @@ jobs:
               - '**/package.json'
               - '**/pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
+            # Unknown relevant paths fail open to the complete CI matrix.
+            fallback:
+              - '**'
+              - '!.github/**'
+              - '!apps/wordpress/**'
+              - '!packages/theme/**'
+              - '!packages/esctt-content/**'
+              - '!tests/JavaScript/**'
+              - '!tests/e2e/**'
+              - '!playwright.config.js'
+              - '!scripts/ci/**'
+              - '!scripts/release/**'
+              - '!scripts/check-scaffold.mjs'
+              - '!.release-please-manifest.json'
+              - '!release-please-config.json'
+              - '!scripts/check-php-coverage.php'
+              - '!package.json'
+              - '!pnpm-lock.yaml'
+              - '!pnpm-workspace.yaml'
+              - '!compose.yml'
+              - '!**/composer.json'
+              - '!**/composer.lock'
 
   php:
     name: PHP tests and coverage
     needs: changes
     if: >-
       needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' ||
+      (needs.changes.outputs.ci == 'true' ||
        needs.changes.outputs.app == 'true' ||
        needs.changes.outputs.theme == 'true' ||
-       needs.changes.outputs.plugin == 'true')
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.php_coverage == 'true' ||
+       needs.changes.outputs.php_dependencies == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     services:
@@ -171,10 +216,13 @@ jobs:
     needs: changes
     if: >-
       needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' ||
+      (needs.changes.outputs.ci == 'true' ||
        needs.changes.outputs.app == 'true' ||
        needs.changes.outputs.theme == 'true' ||
-       needs.changes.outputs.plugin == 'true')
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.browser == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -237,7 +285,16 @@ jobs:
   static:
     name: Static analysis
     needs: changes
-    if: needs.changes.outputs.relevant == 'true'
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.ci == 'true' ||
+       needs.changes.outputs.app == 'true' ||
+       needs.changes.outputs.theme == 'true' ||
+       needs.changes.outputs.plugin == 'true' ||
+       needs.changes.outputs.static_checks == 'true' ||
+       needs.changes.outputs.php_dependencies == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -265,11 +322,32 @@ jobs:
       - run: pnpm --filter @esctt/wordpress composer:install
       - run: pnpm check:scaffold
       - run: pnpm check:php
-      - run: pnpm test:js
-        if: >-
-          needs.changes.outputs.shared == 'true' ||
-          needs.changes.outputs.theme == 'true'
       - run: pnpm check:static
+
+  javascript:
+    name: JavaScript tests
+    needs: changes
+    if: >-
+      needs.changes.outputs.relevant == 'true' &&
+      (needs.changes.outputs.ci == 'true' ||
+       needs.changes.outputs.javascript == 'true' ||
+       needs.changes.outputs.node_dependencies == 'true' ||
+       needs.changes.outputs.fallback == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm test:js
 
   security:
     name: Security checks
@@ -333,7 +411,7 @@ jobs:
   quality:
     name: Quality result
     if: always()
-    needs: [changes, php, public, static, security]
+    needs: [changes, php, public, static, javascript, security]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
