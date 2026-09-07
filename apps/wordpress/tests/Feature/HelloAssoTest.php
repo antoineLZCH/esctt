@@ -69,7 +69,7 @@ test('the HelloAsso block renders through the Inscriptions editor content', func
         'post_type' => 'page',
         'post_status' => 'draft',
         'post_title' => 'Inscriptions test HelloAsso',
-        'post_content' => helloasso_block([
+        'post_content' => '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /-->' . helloasso_block([
             'helloAssoUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026',
         ]),
     ]);
