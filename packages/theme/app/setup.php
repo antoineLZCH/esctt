@@ -342,11 +342,11 @@ add_action('init', function (): void {
 });
 
 add_filter('rest_pre_insert_page', function (object $post) {
-    if (! in_array($post->post_status, ['publish', 'future'], true)) {
+    if (! in_array($post->post_status ?? '', ['publish', 'future'], true)) {
         return $post;
     }
 
-    return page_structure_error((string) $post->post_content) ?? $post;
+    return page_structure_error((string) ($post->post_content ?? '')) ?? $post;
 });
 
 add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $postarr): bool {

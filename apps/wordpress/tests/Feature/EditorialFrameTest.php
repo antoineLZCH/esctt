@@ -95,6 +95,9 @@ test('published page content is validated at the REST and database seams', funct
         'post_content' => $valid,
     ]))->toBeObject()
         ->and(apply_filters('rest_pre_insert_page', (object) [
+            'post_content' => $valid,
+        ]))->toBeObject()
+        ->and(apply_filters('rest_pre_insert_page', (object) [
             'post_status' => 'draft',
             'post_content' => $invalidHero,
         ]))->toBeObject()
