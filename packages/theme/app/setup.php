@@ -40,7 +40,7 @@ function sport_life_helloasso_url(string $url): ?string
 {
     $url = esc_url_raw(trim($url));
     $isAllowed = preg_match(
-        '#^https?://(?:[a-z0-9-]+\.)*helloasso\.com(?::[0-9]+)?(?:[/?#]|$)#i',
+        '~^https?://(?:[a-z0-9-]+\.)*helloasso\.com(?::[0-9]+)?(?:[/?#]|$)~i',
         $url,
     ) === 1;
 
