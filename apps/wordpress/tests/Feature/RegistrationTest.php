@@ -72,6 +72,13 @@ test('registration documents have an admin-managed model and a non-collection po
         ->and($metaBox)->toContain('Choisir un fichier')
         ->and($metaBox)->toContain('documents génériques de saison')
         ->and($metaBox)->toContain('ne collecte ni ne stocke');
+
+    require_once ABSPATH . 'wp-admin/includes/screen.php';
+    set_current_screen('post');
+    esctt_enqueue_registration_document_media('post.php');
+    set_current_screen(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE);
+    esctt_enqueue_registration_document_media('edit.php');
+    esctt_enqueue_registration_document_media('post.php');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
@@ -213,7 +220,7 @@ test('registration documents can use an uploaded media attachment', function () 
     $attachmentId = wp_insert_attachment([
         'post_type' => 'attachment',
         'post_status' => 'inherit',
-        'post_title' => 'Règlement intérieur — fichier média',
+        'post_title' => '',
         'post_mime_type' => 'application/pdf',
     ], '', true);
     $documentId = wp_insert_post([
@@ -240,6 +247,13 @@ test('registration documents can use an uploaded media attachment', function () 
                 'url' => 'https://example.com/uploads/reglement.pdf',
                 'season' => '2026–2027',
             ]);
+
+        ob_start();
+        esctt_render_registration_document_meta_box(get_post($documentId));
+        $metaBox = ob_get_clean();
+
+        expect($metaBox)->toContain('value="' . $attachmentId . '"')
+            ->and($metaBox)->toContain('reglement.pdf');
     } finally {
         remove_filter('wp_get_attachment_url', $attachmentUrlFilter, 10);
 
