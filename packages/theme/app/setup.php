@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/practice-schedules',
     'core/paragraph',
     'core/heading',
     'core/image',
@@ -33,6 +34,136 @@ function page_block_catalog(): array
     $catalog = apply_filters('esctt_page_block_catalog', PAGE_BLOCK_CATALOG);
 
     return $catalog;
+}
+
+/**
+ * @return array<int, array<string, string>>
+ */
+function pricing_axes(): array
+{
+    return [
+        [
+            'key' => 'colombes_loisir',
+            'location_key' => 'colombes',
+            'location_label' => __('Colombes', 'esctt'),
+            'practice_key' => 'loisir',
+            'practice_label' => __('Loisir', 'esctt'),
+        ],
+        [
+            'key' => 'colombes_competition',
+            'location_key' => 'colombes',
+            'location_label' => __('Colombes', 'esctt'),
+            'practice_key' => 'competition',
+            'practice_label' => __('Compétition', 'esctt'),
+        ],
+        [
+            'key' => 'hors_colombes_loisir',
+            'location_key' => 'hors-colombes',
+            'location_label' => __('Hors Colombes', 'esctt'),
+            'practice_key' => 'loisir',
+            'practice_label' => __('Loisir', 'esctt'),
+        ],
+        [
+            'key' => 'hors_colombes_competition',
+            'location_key' => 'hors-colombes',
+            'location_label' => __('Hors Colombes', 'esctt'),
+            'practice_key' => 'competition',
+            'practice_label' => __('Compétition', 'esctt'),
+        ],
+    ];
+}
+
+// @codeCoverageIgnoreStart
+function pricing_amount(mixed $value): string
+{
+    if ($value === null || $value === '') {
+        return __('Montant à renseigner', 'esctt');
+    }
+
+    if (! is_numeric($value)) {
+        return (string) $value;
+    }
+
+    return number_format_i18n((float) $value, 2) . ' €';
+}
+// @codeCoverageIgnoreEnd
+
+// @codeCoverageIgnoreStart
+function pricing_pass_plus_label(mixed $value): string
+{
+    return match ((string) $value) {
+        'yes' => __('Oui', 'esctt'),
+        'no' => __('Non', 'esctt'),
+        default => __('À renseigner', 'esctt'),
+    };
+}
+// @codeCoverageIgnoreEnd
+
+/**
+ * Read the Admin-managed pricing model without supplying unvalidated values.
+ *
+ * @return array<string, mixed>
+ */
+// @codeCoverageIgnoreStart
+function pricing_model(): array
+{
+    $categories = get_field('tariff_categories', 'option');
+    $profiles = get_field('player_profiles', 'option');
+
+    return [
+        'tariff_categories' => is_array($categories) ? $categories : [],
+        'player_profiles' => is_array($profiles) ? $profiles : [],
+        'jersey_price' => get_field('jersey_price', 'option'),
+        'pass_plus_acceptance' => get_field('pass_plus_acceptance', 'option'),
+    ];
+}
+// @codeCoverageIgnoreEnd
+
+/**
+ * Render the public pricing comparison from an Admin-managed model.
+ *
+ * @param array<string, mixed> $pricing
+ */
+function pricing_matrix(array $pricing): string
+{
+    $categories = $pricing['tariff_categories'] ?? [];
+    $profiles = $pricing['player_profiles'] ?? [];
+    $presentedCategories = [];
+    $presentedProfiles = [];
+
+    foreach ($categories as $category) {
+        $options = [];
+        foreach (pricing_axes() as $axis) {
+            $options[] = [
+                'location_key' => $axis['location_key'],
+                'location_label' => $axis['location_label'],
+                'practice_key' => $axis['practice_key'],
+                'practice_label' => $axis['practice_label'],
+                'amount' => pricing_amount($category[$axis['key']] ?? null),
+            ];
+        }
+
+        $presentedCategories[] = [
+            'label' => (string) ($category['label'] ?? __('Catégorie à renseigner', 'esctt')),
+            'options' => $options,
+        ];
+    }
+
+    foreach ($profiles as $profile) {
+        $label = (string) ($profile['label'] ?? '');
+        if ($label !== '') {
+            $presentedProfiles[] = ['label' => $label];
+        }
+    }
+
+    return view('partials.pricing-matrix', [
+        'pricing' => [
+            'tariff_categories' => $presentedCategories,
+            'player_profiles' => $presentedProfiles,
+            'jersey_price' => pricing_amount($pricing['jersey_price'] ?? null),
+            'pass_plus_acceptance' => pricing_pass_plus_label($pricing['pass_plus_acceptance'] ?? ''),
+        ],
+    ])->render();
 }
 
 function page_structure_error(string $content): ?WP_Error
