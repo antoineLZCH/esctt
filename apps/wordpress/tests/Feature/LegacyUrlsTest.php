@@ -181,7 +181,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
         $_POST = [
             'esctt_redirect_nonce' => wp_create_nonce('esctt_save_redirect'),
-            'esctt_redirect_source' => esctt_page_path($targetId),
+            'esctt_redirect_source' => 'https://evil.example/path',
             'esctt_redirect_target' => (string) $targetId,
         ];
         esctt_save_redirect($redirectId);
