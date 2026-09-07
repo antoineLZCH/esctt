@@ -119,20 +119,12 @@ function pricing_model(): array
  */
 function pricing_matrix(array $pricing): string
 {
-    $categories = is_array($pricing['tariff_categories'] ?? null)
-        ? $pricing['tariff_categories']
-        : [];
-    $profiles = is_array($pricing['player_profiles'] ?? null)
-        ? $pricing['player_profiles']
-        : [];
+    $categories = $pricing['tariff_categories'] ?? [];
+    $profiles = $pricing['player_profiles'] ?? [];
     $presentedCategories = [];
     $presentedProfiles = [];
 
     foreach ($categories as $category) {
-        if (! is_array($category)) {
-            continue;
-        }
-
         $options = [];
         foreach (pricing_axes() as $axis) {
             $options[] = [
@@ -151,8 +143,9 @@ function pricing_matrix(array $pricing): string
     }
 
     foreach ($profiles as $profile) {
-        if (is_array($profile) && (string) ($profile['label'] ?? '') !== '') {
-            $presentedProfiles[] = ['label' => (string) $profile['label']];
+        $label = (string) ($profile['label'] ?? '');
+        if ($label !== '') {
+            $presentedProfiles[] = ['label' => $label];
         }
     }
 

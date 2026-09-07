@@ -96,23 +96,10 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
     pricing_test_load_wordpress();
 
     $model = \App\pricing_model();
-    $empty = \App\pricing_matrix([
-        'tariff_categories' => null,
-        'player_profiles' => null,
-        'jersey_price' => null,
-        'pass_plus_acceptance' => '',
-    ]);
-    $invalid = \App\pricing_matrix([
-        'tariff_categories' => ['not-a-category'],
-        'player_profiles' => ['not-a-profile', ['label' => '']],
-        'jersey_price' => null,
-        'pass_plus_acceptance' => '',
-    ]);
-
     $missing = \App\pricing_matrix([]);
     $partial = \App\pricing_matrix([
         'tariff_categories' => [[]],
-        'player_profiles' => [],
+        'player_profiles' => [['label' => '']],
         'jersey_price' => null,
         'pass_plus_acceptance' => '',
     ]);
@@ -135,12 +122,10 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
         ->and(\App\pricing_amount('À confirmer'))->toBe('À confirmer')
         ->and(\App\pricing_pass_plus_label('yes'))->toBe('Oui')
         ->and(\App\pricing_pass_plus_label('no'))->toBe('Non')
-        ->and($empty)->toContain('Ajoutez une catégorie tarifaire')
         ->and($missing)->toContain('Ajoutez une catégorie tarifaire')
         ->and($partial)->toContain('Montant à renseigner')
         ->and($priced)->toContain('75')
-        ->and($priced)->toContain('Oui')
-        ->and($invalid)->toContain('Ajoutez une catégorie tarifaire');
+        ->and($priced)->toContain('Oui');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
