@@ -178,12 +178,16 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         expect(esctt_redirect_source_path(''))->toBe('')
             ->and(esctt_redirect_source_path("/null\0path"))->toBe('')
             ->and(esctt_redirect_source_path('relative/path'))->toBe('')
+            ->and(esctt_redirect_source_path('/'))->toBe('/')
             ->and(esctt_redirect_path_from_url('https://evil.example/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://'))->toBe('')
+            ->and(esctt_redirect_path_from_url('http://:pass@127.0.0.1/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://user:pass@127.0.0.1/path'))->toBe('')
             ->and(esctt_redirect_path_from_url('http://127.0.0.1:9999/path'))->toBe('')
             ->and(esctt_page_path(0))->toBe('')
+            ->and(esctt_page_path($redirectId))->toBe('')
             ->and(esctt_redirect_target_is_valid(0))->toBeFalse()
+            ->and(esctt_redirect_target_is_valid($redirectId))->toBeFalse()
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
             ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
             ->and(esctt_page_is_descendant($cycleAId, 999999))->toBeFalse()
@@ -195,6 +199,17 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_can_save_redirect($revisionId))->toBeFalse()
             ->and($metaBox)->toContain('esctt-redirect-source')
             ->and($metaBox)->toContain('esctt-redirect-target');
+
+        $targetPage = get_post($targetId);
+        if (! $targetPage instanceof WP_Post) {
+            throw new RuntimeException('Unable to load redirect target fixture.');
+        }
+        esctt_capture_page_redirects($redirectId, []);
+        esctt_store_page_redirects($targetId, $targetPage);
+        $_POST = [];
+        expect(esctt_can_save_redirect($targetId))->toBeFalse();
+        $_POST = ['esctt_redirect_nonce' => 'invalid'];
+        expect(esctt_can_save_redirect($redirectId))->toBeFalse();
 
         esctt_upsert_page_redirect('', $targetId);
         esctt_upsert_page_redirect('/invalid-target/', 0);

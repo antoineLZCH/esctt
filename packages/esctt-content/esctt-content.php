@@ -1997,7 +1997,7 @@ function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
 
     $targetPath = esctt_redirect_path_from_url((string) get_permalink($targetId));
 
-    if ($targetPath === '' || $sourcePath === $targetPath || esctt_redirect_would_loop($sourcePath, $targetId)) {
+    if ($sourcePath === $targetPath || esctt_redirect_would_loop($sourcePath, $targetId)) {
         return;
     }
 
