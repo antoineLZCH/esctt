@@ -101,6 +101,8 @@ else
 fi
 
 "${wp[@]}" option update show_on_front page
+"${wp[@]}" option update permalink_structure '/%postname%/'
+"${wp[@]}" rewrite flush --soft
 "${wp[@]}" option update page_on_front "$home_id"
 
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
