@@ -22,4 +22,14 @@ class App extends Composer
     {
         return get_bloginfo('name', 'display');
     }
+
+    /**
+     * Retrieve the active important message.
+     *
+     * @return array{message: string, detail_url: string, detail_label: ?string}|null
+     */
+    public function importantMessage(): ?array
+    {
+        return esctt_get_active_important_message_data();
+    }
 }

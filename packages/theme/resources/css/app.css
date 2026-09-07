@@ -10,3 +10,30 @@
 .esctt-hero--compact {
   padding-block: 1.5rem;
 }
+
+.esctt-important-message {
+  background: #fef3c7;
+  border-block: 2px solid #92400e;
+  color: #451a03;
+  padding: 0.75rem 1.5rem;
+}
+
+.esctt-important-message__content {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: center;
+  margin-inline: auto;
+  max-width: 72rem;
+}
+
+.esctt-important-message__text {
+  font-weight: 700;
+  margin: 0;
+}
+
+.esctt-important-message__link {
+  color: inherit;
+  font-weight: 700;
+}

@@ -62,3 +62,17 @@ fi
 
 "${wp[@]}" theme activate esctt --skip-plugins
 "${wp[@]}" plugin activate secure-custom-fields esctt-content --skip-themes
+
+important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
+important_message_args=(
+    --post_title='CI important message'
+    --post_name=ci-important-message
+    --post_status=publish
+    --meta_input='{"_esctt_important_detail_url":"https://example.test/important-message","_esctt_important_detail_label":"Lire les détails du message important"}'
+)
+
+if [[ -n "$important_message_id" ]]; then
+    "${wp[@]}" post update "$important_message_id" "${important_message_args[@]}"
+else
+    "${wp[@]}" post create --post_type=esctt_important "${important_message_args[@]}"
+fi
