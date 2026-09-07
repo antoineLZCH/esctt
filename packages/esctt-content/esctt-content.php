@@ -20,6 +20,9 @@ const ESCTT_REGISTRATION_DOCUMENT_POST_TYPE = 'esctt_reg_document';
 const ESCTT_REGISTRATION_DOCUMENT_URL_META = '_esctt_registration_document_url';
 const ESCTT_REGISTRATION_DOCUMENT_SEASON_META = '_esctt_registration_document_season';
 const ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META = '_esctt_registration_document_attachment_id';
+const ESCTT_REDIRECT_POST_TYPE = 'esctt_redirect';
+const ESCTT_REDIRECT_SOURCE_META = '_esctt_redirect_source';
+const ESCTT_REDIRECT_TARGET_META = '_esctt_redirect_target';
 const ESCTT_MEMBERSHIP_DOCUMENTS_POLICY = 'Le site ne collecte ni ne stocke de document d’adhésion.';
 
 /**
@@ -1534,6 +1537,7 @@ function esctt_render_club_menu(): void
         'edit.php?post_type=' . ESCTT_IMPORTANT_MESSAGE_POST_TYPE => 'dashicons-warning',
         'edit.php?post_type=' . ESCTT_PARTNER_POST_TYPE => 'dashicons-groups',
         'edit.php?post_type=' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE => 'dashicons-media-document',
+        'edit.php?post_type=' . ESCTT_REDIRECT_POST_TYPE => 'dashicons-randomize',
         'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-tag',
         'esctt-faq' => 'dashicons-testimonial',
         'esctt-pricing' => 'dashicons-money-alt',
@@ -1608,4 +1612,543 @@ if (function_exists('add_action')) {
     add_action('save_post_' . ESCTT_PARTNER_POST_TYPE, 'esctt_save_partner');
     add_action('admin_enqueue_scripts', 'esctt_enqueue_registration_document_media');
     esctt_content_bootstrap();
+}
+
+/**
+ * Normalize an internal URL path used by the redirect registry.
+ */
+function esctt_redirect_source_path(string $source): string
+{
+    $source = trim($source);
+
+    if ($source === '' || str_contains($source, "\0")) {
+        return '';
+    }
+
+    $parts = wp_parse_url($source);
+
+    if (! is_array($parts)
+        || isset($parts['scheme'])
+        || isset($parts['host'])
+        || isset($parts['user'])
+        || isset($parts['pass'])) {
+        return '';
+    }
+
+    $path = (string) ($parts['path'] ?? '');
+
+    if ($path === '' || ! str_starts_with($path, '/')) {
+        return '';
+    }
+
+    $path = preg_replace('#/{2,}#', '/', $path) ?: '';
+
+    return $path === '/' ? '/' : untrailingslashit($path);
+}
+
+function esctt_redirect_path_from_url(string $url): string
+{
+    $parts = wp_parse_url($url);
+
+    if (! is_array($parts)) {
+        return '';
+    }
+
+    if (isset($parts['host'])) {
+        $home = wp_parse_url(home_url('/'));
+        if (! is_array($home)
+            || strtolower((string) $parts['host']) !== strtolower((string) ($home['host'] ?? ''))
+            || (int) ($parts['port'] ?? 0) !== (int) ($home['port'] ?? 0)
+            || isset($parts['user'])
+            || isset($parts['pass'])) {
+            return '';
+        }
+    }
+
+    return esctt_redirect_source_path((string) ($parts['path'] ?? ''));
+}
+
+/**
+ * Return the page path from WordPress's generated permalink.
+ */
+function esctt_page_path(WP_Post|int $page): string
+{
+    $page = $page instanceof WP_Post ? $page : get_post($page);
+
+    if (! $page instanceof WP_Post || $page->post_type !== 'page' || $page->post_name === '') {
+        return '';
+    }
+
+    return esctt_redirect_path_from_url((string) get_permalink($page));
+}
+
+function esctt_redirect_target_is_valid(int $targetId): bool
+{
+    $target = get_post($targetId);
+
+    return $target instanceof WP_Post
+        && $target->post_type === 'page'
+        && $target->post_status === 'publish'
+        && esctt_redirect_path_from_url((string) get_permalink($target)) !== '';
+}
+
+/**
+ * Register the private, Admin-managed redirect registry.
+ */
+function esctt_register_redirect_model(): void
+{
+    static $registered = false;
+
+    if ($registered) {
+        return;
+    }
+
+    $registered = true;
+    register_post_type(ESCTT_REDIRECT_POST_TYPE, [
+        'labels' => [
+            'name' => __('Redirections', 'esctt-content'),
+            'singular_name' => __('Redirection', 'esctt-content'),
+            'add_new_item' => __('Ajouter une redirection', 'esctt-content'),
+            'edit_item' => __('Modifier la redirection', 'esctt-content'),
+            'menu_name' => __('Redirections', 'esctt-content'),
+        ],
+        'description' => __('Registre des anciennes URL du site.', 'esctt-content'),
+        'public' => false,
+        'publicly_queryable' => false,
+        'exclude_from_search' => true,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'show_in_rest' => true,
+        'supports' => ['title'],
+        'capability_type' => 'post',
+        'map_meta_cap' => true,
+        'rewrite' => false,
+        'query_var' => false,
+    ]);
+
+    register_post_meta(ESCTT_REDIRECT_POST_TYPE, ESCTT_REDIRECT_SOURCE_META, [
+        'single' => true,
+        'type' => 'string',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'esctt_redirect_source_path',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
+    register_post_meta(ESCTT_REDIRECT_POST_TYPE, ESCTT_REDIRECT_TARGET_META, [
+        'single' => true,
+        'type' => 'integer',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'absint',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
+}
+
+function esctt_register_redirect_meta_box(): void
+{
+    add_meta_box(
+        'esctt-redirect-details',
+        __('Détails de la redirection', 'esctt-content'),
+        'esctt_render_redirect_meta_box',
+        ESCTT_REDIRECT_POST_TYPE,
+        'normal',
+        'high',
+    );
+}
+
+/**
+ * Render the source path and its published page destination.
+ */
+function esctt_render_redirect_meta_box(WP_Post $post): void
+{
+    wp_nonce_field('esctt_save_redirect', 'esctt_redirect_nonce');
+    $source = (string) get_post_meta($post->ID, ESCTT_REDIRECT_SOURCE_META, true);
+    $targetId = (int) get_post_meta($post->ID, ESCTT_REDIRECT_TARGET_META, true);
+    $targets = get_posts([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'title',
+        'order' => 'ASC',
+    ]);
+    ?>
+    <p>
+        <label for="esctt-redirect-source"><strong><?php esc_html_e('Ancienne URL', 'esctt-content'); ?></strong></label><br>
+        <input class="widefat" type="text" id="esctt-redirect-source" name="esctt_redirect_source" value="<?php echo esc_attr($source); ?>" placeholder="/ancienne-page/" required>
+    </p>
+    <p>
+        <label for="esctt-redirect-target"><strong><?php esc_html_e('Destination', 'esctt-content'); ?></strong></label><br>
+        <select class="widefat" id="esctt-redirect-target" name="esctt_redirect_target" required>
+            <option value="0"><?php esc_html_e('Choisir une page publiée', 'esctt-content'); ?></option>
+            <?php foreach ($targets as $target) : ?>
+                <option value="<?php echo esc_attr((string) $target->ID); ?>" <?php selected($targetId, $target->ID); ?>><?php echo esc_html(get_the_title($target) . ' — ' . (string) get_permalink($target)); ?></option>
+            <?php endforeach; ?>
+        </select>
+    </p>
+    <p class="description"><?php esc_html_e('La destination est résolue au moment de la requête afin que les changements ultérieurs de slug ne créent pas de chaîne de redirections.', 'esctt-content'); ?></p>
+    <?php
+}
+
+function esctt_can_save_redirect(int $postId): bool
+{
+    if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($postId)) {
+        return false;
+    }
+
+    if (get_post_type($postId) !== ESCTT_REDIRECT_POST_TYPE || ! current_user_can('edit_post', $postId)) {
+        return false;
+    }
+
+    return isset($_POST['esctt_redirect_nonce'])
+        && is_string($_POST['esctt_redirect_nonce'])
+        && wp_verify_nonce(
+            sanitize_text_field(wp_unslash($_POST['esctt_redirect_nonce'])),
+            'esctt_save_redirect',
+        ) !== false;
+}
+
+function esctt_save_redirect(int $postId): void
+{
+    if (! esctt_can_save_redirect($postId)) {
+        return;
+    }
+
+    $source = isset($_POST['esctt_redirect_source']) && is_string($_POST['esctt_redirect_source'])
+        ? esctt_redirect_source_path(wp_unslash($_POST['esctt_redirect_source']))
+        : '';
+    $targetId = isset($_POST['esctt_redirect_target']) && is_scalar($_POST['esctt_redirect_target'])
+        ? absint((string) wp_unslash($_POST['esctt_redirect_target']))
+        : 0;
+    $targetUrl = $targetId > 0 && esctt_redirect_target_is_valid($targetId)
+        ? (string) get_permalink($targetId)
+        : '';
+
+    if (
+        $source === ''
+        || $targetUrl === ''
+        || $source === esctt_redirect_source_path($targetUrl)
+        || esctt_redirect_would_loop($source, $targetId)
+    ) {
+        delete_post_meta($postId, ESCTT_REDIRECT_SOURCE_META);
+        delete_post_meta($postId, ESCTT_REDIRECT_TARGET_META);
+
+        return;
+    }
+
+    update_post_meta($postId, ESCTT_REDIRECT_SOURCE_META, $source);
+    update_post_meta($postId, ESCTT_REDIRECT_TARGET_META, $targetId);
+}
+
+function esctt_page_is_descendant(int $pageId, int $ancestorId): bool
+{
+    $seen = [];
+    $page = get_post($pageId);
+
+    while ($page instanceof WP_Post && $page->post_parent > 0) {
+        if (isset($seen[$page->ID])) {
+            return false;
+        }
+
+        $seen[$page->ID] = true;
+
+        if ($page->post_parent === $ancestorId) {
+            return true;
+        }
+
+        $page = get_post($page->post_parent);
+    }
+
+    return false;
+}
+
+/**
+ * Snapshot published descendants before a page update changes their path.
+ */
+function esctt_capture_page_redirects(int $postId, array $postData): void
+{
+    $post = get_post($postId);
+
+
+    if (! $post instanceof WP_Post || $post->post_type !== 'page' || $post->post_status !== 'publish') {
+        return;
+    }
+
+    $snapshot = [];
+    foreach (get_posts([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+    ]) as $candidate) {
+        if ($candidate->ID === $postId || esctt_page_is_descendant($candidate->ID, $postId)) {
+            $path = esctt_page_path($candidate);
+            if ($path !== '') {
+                $snapshot[$candidate->ID] = $path;
+            }
+        }
+    }
+
+    $GLOBALS['esctt_page_redirect_snapshot'][$postId] = $snapshot;
+
+}
+
+function esctt_capture_page_redirects_from_data(
+    array $data,
+    array $postData,
+    array $unsanitizedPostData,
+    bool $update,
+): array {
+
+    if ($update) {
+        esctt_capture_page_redirects((int) ($postData['ID'] ?? 0), $postData);
+    }
+
+    return $data;
+}
+
+/**
+ * Persist every changed path against the page ID, not a stale URL.
+ */
+function esctt_store_page_redirects(int $postId, WP_Post $postAfter): void
+{
+    $snapshot = $GLOBALS['esctt_page_redirect_snapshot'][$postId] ?? [];
+    unset($GLOBALS['esctt_page_redirect_snapshot'][$postId]);
+
+    if ($snapshot === [] || $postAfter->post_type !== 'page' || $postAfter->post_status !== 'publish') {
+        return;
+    }
+
+    foreach ($snapshot as $pageId => $oldPath) {
+        $page = get_post((int) $pageId);
+        $newPath = $page instanceof WP_Post ? esctt_page_path($page) : '';
+
+
+        if (! $page instanceof WP_Post || $page->post_status !== 'publish' || $newPath === '' || $oldPath === $newPath) {
+            continue;
+        }
+
+        esctt_upsert_page_redirect($oldPath, $page->ID);
+    }
+}
+
+function esctt_store_page_redirects_after_insert(
+    int $postId,
+    WP_Post $postAfter,
+    bool $update,
+): void {
+
+    if (! $update) {
+        return;
+    }
+
+    esctt_store_page_redirects($postId, $postAfter);
+}
+
+/**
+ * Return the verified legacy paths that have a current page destination.
+ *
+ * @return array<string, string>
+ */
+function esctt_inventoried_redirects(): array
+{
+    return [
+        '/accueil/' => 'front',
+        '/politique-de-confidentialite/' => 'confidentialite',
+    ];
+}
+
+function esctt_register_inventoried_redirects(): void
+{
+    foreach (esctt_inventoried_redirects() as $sourcePath => $targetSlug) {
+        $targetPage = get_page_by_path($targetSlug);
+        $targetId = $targetSlug === 'front'
+            ? (int) get_option('page_on_front')
+            : (is_object($targetPage) ? (int) $targetPage->ID : 0);
+
+        if ($targetId > 0) {
+            esctt_upsert_page_redirect($sourcePath, $targetId);
+        }
+    }
+}
+
+function esctt_redirect_would_loop(string $sourcePath, int $targetId): bool
+{
+    $visited = [];
+    $currentTargetId = $targetId;
+
+    while ($currentTargetId > 0) {
+        $currentPath = esctt_page_path($currentTargetId);
+        if ($currentPath === '') {
+            break;
+        }
+
+        if ($currentPath === $sourcePath || isset($visited[$currentPath])) {
+            return true;
+        }
+
+        $visited[$currentPath] = true;
+        $redirect = esctt_find_legacy_redirect($currentPath);
+        if ($redirect === null) {
+            return false;
+        }
+
+        $currentTargetId = $redirect['target_id'];
+    }
+
+    return false;
+}
+
+function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
+{
+    $sourcePath = esctt_redirect_source_path($sourcePath);
+    if ($sourcePath === '' || ! esctt_redirect_target_is_valid($targetId)) {
+        return;
+    }
+
+    $targetPath = esctt_redirect_path_from_url((string) get_permalink($targetId));
+
+    if ($sourcePath === $targetPath || esctt_redirect_would_loop($sourcePath, $targetId)) {
+        return;
+    }
+
+    $redirectIds = get_posts([
+        'post_type' => ESCTT_REDIRECT_POST_TYPE,
+        'post_status' => ['publish', 'draft'],
+        'posts_per_page' => -1,
+        'meta_key' => ESCTT_REDIRECT_SOURCE_META,
+        'meta_value' => $sourcePath,
+        'fields' => 'ids',
+    ]);
+
+    if ($redirectIds === []) {
+        $redirectId = wp_insert_post([
+            'post_type' => ESCTT_REDIRECT_POST_TYPE,
+            'post_status' => 'publish',
+            'post_title' => $sourcePath,
+        ], true);
+
+        if (is_wp_error($redirectId)) {
+            return;
+        }
+
+        $redirectIds[] = $redirectId;
+    }
+
+    foreach ($redirectIds as $redirectId) {
+        if (get_post_status((int) $redirectId) !== 'publish') {
+            wp_update_post([
+                'ID' => (int) $redirectId,
+                'post_status' => 'publish',
+            ]);
+        }
+
+        update_post_meta((int) $redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
+        update_post_meta((int) $redirectId, ESCTT_REDIRECT_SOURCE_META, $sourcePath);
+    }
+}
+
+/**
+ * @return array{post_id: int, target_id: int, url: string}|null
+ */
+function esctt_find_legacy_redirect(string $requestUri): ?array
+{
+    $parts = wp_parse_url($requestUri);
+    $sourcePath = is_array($parts) ? esctt_redirect_source_path((string) ($parts['path'] ?? '')) : '';
+
+    if ($sourcePath === '') {
+        return null;
+    }
+
+    foreach (get_posts([
+        'post_type' => ESCTT_REDIRECT_POST_TYPE,
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'meta_key' => ESCTT_REDIRECT_SOURCE_META,
+        'meta_value' => $sourcePath,
+        'fields' => 'ids',
+    ]) as $redirectId) {
+        $targetId = (int) get_post_meta((int) $redirectId, ESCTT_REDIRECT_TARGET_META, true);
+
+        if (! esctt_redirect_target_is_valid($targetId)) {
+            continue;
+        }
+
+        $targetUrl = (string) get_permalink($targetId);
+        if ($sourcePath === esctt_redirect_path_from_url($targetUrl)) {
+            continue;
+        }
+
+        return [
+            'post_id' => (int) $redirectId,
+            'target_id' => $targetId,
+            'url' => $targetUrl,
+        ];
+    }
+
+    return null;
+}
+
+function esctt_redirect_location(string $targetUrl, string $requestUri): string
+{
+    $parts = wp_parse_url($requestUri);
+    $query = is_array($parts) ? (string) ($parts['query'] ?? '') : '';
+
+    if ($query === '') {
+        return $targetUrl;
+    }
+
+    $fragment = '';
+    $fragmentPosition = strpos($targetUrl, '#');
+    if ($fragmentPosition !== false) {
+        $fragment = substr($targetUrl, $fragmentPosition);
+        $targetUrl = substr($targetUrl, 0, $fragmentPosition);
+    }
+
+    return $targetUrl . (str_contains($targetUrl, '?') ? '&' : '?') . $query . $fragment;
+}
+
+// @codeCoverageIgnoreStart
+/**
+ * Redirect only front-end GET/HEAD requests and preserve their query string.
+ */
+function esctt_redirect_legacy_url(): void
+{
+    if (is_admin() || wp_doing_ajax() || wp_doing_cron() || (defined('REST_REQUEST') && REST_REQUEST)) {
+        return;
+    }
+
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if (! in_array($method, ['GET', 'HEAD'], true) || ! isset($_SERVER['REQUEST_URI']) || ! is_string($_SERVER['REQUEST_URI'])) {
+        return;
+    }
+
+    $requestUri = wp_unslash($_SERVER['REQUEST_URI']);
+    $redirect = esctt_find_legacy_redirect($requestUri);
+    if ($redirect === null) {
+        return;
+    }
+
+    $location = esctt_redirect_location($redirect['url'], $requestUri);
+
+    if (wp_safe_redirect($location, 301, 'ESCTT Content')) {
+        exit;
+    }
+}
+// @codeCoverageIgnoreEnd
+
+if (function_exists('add_filter')) {
+    add_filter('register_post_type_args', static function (array $args, string $postType): array {
+        if ($postType === ESCTT_REDIRECT_POST_TYPE) {
+            $args['show_in_menu'] = ESCTT_CLUB_MENU_SLUG;
+        }
+
+        return $args;
+    }, 10, 2);
+}
+
+if (function_exists('add_action')) {
+    add_action('init', 'esctt_register_redirect_model', 5);
+    add_action('add_meta_boxes_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_register_redirect_meta_box');
+    add_action('save_post_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_save_redirect');
+    add_filter('wp_insert_post_data', 'esctt_capture_page_redirects_from_data', 10, 4);
+    add_action('wp_insert_post', 'esctt_store_page_redirects_after_insert', 10, 3);
+    add_action('template_redirect', 'esctt_redirect_legacy_url', 1);
+    add_action('init', 'esctt_register_inventoried_redirects', 20);
 }

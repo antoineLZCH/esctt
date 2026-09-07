@@ -15,6 +15,31 @@ test('the public home page is served by WordPress', async ({ page }) => {
     await expect(page.locator('a[href="#main"]')).toHaveText('Skip to content');
 });
 
+test('legacy page URLs redirect permanently to their current native pages', async ({ request, baseURL }) => {
+    const cases = [
+        { source: '/accueil/?utm_source=legacy', destination: '/' },
+        { source: '/politique-de-confidentialite/?utm_source=legacy', destination: '/confidentialite/' },
+    ];
+
+    for (const { source, destination } of cases) {
+        const response = await request.get(source, { maxRedirects: 0 });
+        const location = new URL(response.headers().location, baseURL);
+
+        expect(response.status()).toBe(301);
+        expect(location.pathname).toBe(destination);
+        if (source.includes('?')) {
+            expect(location.search).toBe('?utm_source=legacy');
+        }
+
+        const headResponse = await request.head(source, { maxRedirects: 0 });
+        expect(headResponse.status()).toBe(301);
+        expect(new URL(headResponse.headers().location, baseURL).pathname).toBe(destination);
+
+        const postResponse = await request.post(source, { maxRedirects: 0 });
+        expect(postResponse.status()).not.toBe(301);
+    }
+});
+
 test('the public partner list exposes named external links', async ({ page }) => {
     await page.goto('/');
 

@@ -101,7 +101,22 @@ else
 fi
 
 "${wp[@]}" option update show_on_front page
+"${wp[@]}" option update permalink_structure '/%postname%/'
+"${wp[@]}" rewrite flush
 "${wp[@]}" option update page_on_front "$home_id"
+
+privacy_ids=( $("${wp[@]}" post list --post_type=page --name=confidentialite --field=ID --format=ids) )
+if ((${#privacy_ids[@]} == 0)); then
+    privacy_id=$("${wp[@]}" post create \
+        --post_type=page \
+        --post_status=publish \
+        --post_title='Confidentialité' \
+        --post_name=confidentialite \
+        --post_content='<!-- wp:esctt/hero {"title":"Confidentialité","lock":{"move":true,"remove":true}} /-->' \
+        --porcelain)
+else
+    privacy_id="${privacy_ids[0]}"
+fi
 
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
 important_message_args=(
