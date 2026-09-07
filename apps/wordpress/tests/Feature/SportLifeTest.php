@@ -50,7 +50,7 @@ test('the sport life CTA is absent until an external HelloAsso URL is configured
     $withoutUrl = do_blocks(sport_life_block());
     $sameSiteUrl = do_blocks(sport_life_block(['helloAssoUrl' => home_url('/inscriptions')]));
     $otherDomainUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://example.com/tournoi']));
-    $missingHostUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https:///tournoi']));
+    $missingHostUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https:/tournoi']));
     $rootHelloAssoUrl = do_blocks(sport_life_block(['helloAssoUrl' => 'https://helloasso.com/tournoi']));
 
     expect($withoutUrl)->not->toContain('esctt-sport-life__cta')
