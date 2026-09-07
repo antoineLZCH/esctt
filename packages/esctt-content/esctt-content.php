@@ -81,6 +81,13 @@ function esctt_registration_documents(): array
  */
 function esctt_register_registration_document_model(): void
 {
+    static $registered = false;
+
+    if ($registered) {
+        return;
+    }
+
+    $registered = true;
     register_post_type(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, [
         'labels' => [
             'name' => __('Documents de saison', 'esctt-content'),
@@ -131,7 +138,7 @@ function esctt_content_bootstrap(): void
     }
 
     $bootstrapped = true;
-    add_action('init', 'esctt_register_registration_document_model');
+    esctt_register_registration_document_model();
     add_action('add_meta_boxes', function (): void {
         add_meta_box(
             'esctt-registration-document-details',
