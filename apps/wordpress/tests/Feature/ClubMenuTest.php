@@ -38,6 +38,7 @@ test('club content is grouped under one admin menu', function () {
             'edit.php?post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE,
             'edit.php?post_type=' . ESCTT_IMPORTANT_MESSAGE_POST_TYPE,
             'edit.php?post_type=' . ESCTT_PARTNER_POST_TYPE,
+            'edit.php?post_type=' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE,
             'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE,
         )
         ->and($optionsPages['esctt-faq']['parent_slug'])->toBe(ESCTT_CLUB_MENU_SLUG)
@@ -64,6 +65,7 @@ test('club content is grouped under one admin menu', function () {
         'esctt-club-menu__grid',
         'dashicons-location',
         'dashicons-warning',
+        'dashicons-media-document',
         'dashicons-admin-generic',
         'Gérez les contenus du club depuis cette page ou le sous-menu.',
     );

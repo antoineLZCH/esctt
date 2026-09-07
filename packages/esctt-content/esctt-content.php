@@ -16,6 +16,282 @@ declare(strict_types=1);
 defined('ABSPATH') || exit;
 
 const ESCTT_CLUB_MENU_SLUG = 'esctt-club';
+const ESCTT_REGISTRATION_DOCUMENT_POST_TYPE = 'esctt_reg_document';
+const ESCTT_REGISTRATION_DOCUMENT_URL_META = '_esctt_registration_document_url';
+const ESCTT_REGISTRATION_DOCUMENT_SEASON_META = '_esctt_registration_document_season';
+const ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META = '_esctt_registration_document_attachment_id';
+const ESCTT_MEMBERSHIP_DOCUMENTS_POLICY = 'Le site ne collecte ni ne stocke de document d’adhésion.';
+
+/**
+ * Explain the site's document boundary.
+ */
+function esctt_membership_documents_policy(): string
+{
+    return __(ESCTT_MEMBERSHIP_DOCUMENTS_POLICY, 'esctt-content');
+}
+
+/**
+ * Return a safe public URL for a season document.
+ */
+function esctt_registration_document_url(string $url): string
+{
+    $url = esc_url_raw($url);
+
+    return wp_http_validate_url($url) ? $url : '';
+}
+
+/**
+ * Return the safe public URL for a media attachment.
+ */
+function esctt_registration_document_attachment_url(int $attachmentId): string
+{
+    if ($attachmentId <= 0 || get_post_type($attachmentId) !== 'attachment') {
+        return '';
+    }
+
+    return esctt_registration_document_url((string) wp_get_attachment_url($attachmentId));
+}
+
+/**
+ * Return the published documents managed by an Admin.
+ *
+ * @return array<int, array{title: string, url: string, season: string}>
+ */
+function esctt_registration_documents(): array
+{
+    $postIds = get_posts([
+        'post_type' => ESCTT_REGISTRATION_DOCUMENT_POST_TYPE,
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => [
+            'menu_order' => 'ASC',
+            'title' => 'ASC',
+        ],
+        'fields' => 'ids',
+        'no_found_rows' => true,
+    ]);
+    $documents = [];
+
+    foreach ($postIds as $postId) {
+        $title = get_the_title($postId);
+        $attachmentId = (int) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, true);
+        $url = esctt_registration_document_attachment_url($attachmentId);
+
+        if ($url === '') {
+            $url = esctt_registration_document_url((string) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_URL_META, true));
+        }
+
+        if ($title === '' || $url === '') {
+            continue;
+        }
+
+        $documents[] = [
+            'title' => $title,
+            'url' => $url,
+            'season' => sanitize_text_field((string) get_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, true)),
+        ];
+    }
+
+    return $documents;
+}
+
+/**
+ * Register the Admin-managed document model.
+ */
+function esctt_register_registration_document_model(): void
+{
+    static $registered = false;
+
+    if ($registered) {
+        return;
+    }
+
+    $registered = true;
+    register_post_type(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, [
+        'labels' => [
+            'name' => __('Documents de saison', 'esctt-content'),
+            'singular_name' => __('Document de saison', 'esctt-content'),
+            'add_new_item' => __('Ajouter un document de saison', 'esctt-content'),
+            'edit_item' => __('Modifier le document de saison', 'esctt-content'),
+            'menu_name' => __('Documents de saison', 'esctt-content'),
+        ],
+        'description' => __('Documents génériques applicables à une saison.', 'esctt-content'),
+        'public' => false,
+        'publicly_queryable' => false,
+        'exclude_from_search' => true,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'show_in_rest' => true,
+        'menu_icon' => 'dashicons-media-document',
+        'supports' => ['title', 'page-attributes'],
+        'capability_type' => 'post',
+        'map_meta_cap' => true,
+        'rewrite' => false,
+    ]);
+
+    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_URL_META, [
+        'single' => true,
+        'type' => 'string',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'esctt_registration_document_url',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
+    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, [
+        'single' => true,
+        'type' => 'string',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'sanitize_text_field',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
+    register_post_meta(ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, [
+        'single' => true,
+        'type' => 'integer',
+        'show_in_rest' => true,
+        'sanitize_callback' => 'absint',
+        'auth_callback' => static fn (bool $allowed, string $metaKey, int $postId): bool => current_user_can('edit_post', $postId),
+    ]);
+}
+
+/**
+ * Register the content model hooks after WordPress is available.
+ */
+function esctt_content_bootstrap(): void
+{
+    static $bootstrapped = false;
+
+    if ($bootstrapped) {
+        return;
+    }
+
+    $bootstrapped = true;
+    esctt_register_registration_document_model();
+    add_action('add_meta_boxes', function (): void {
+        add_meta_box(
+            'esctt-registration-document-details',
+            __('Document de saison', 'esctt-content'),
+            'esctt_render_registration_document_meta_box',
+            ESCTT_REGISTRATION_DOCUMENT_POST_TYPE,
+            'normal',
+            'high',
+        );
+    });
+    add_action('save_post_' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE, 'esctt_save_registration_document', 10, 2);
+}
+
+/**
+ * Load the media picker only on season document edit screens.
+ */
+function esctt_enqueue_registration_document_media(string $hookSuffix): void
+{
+    if (! in_array($hookSuffix, ['post.php', 'post-new.php'], true)) {
+        return;
+    }
+
+    $screen = get_current_screen();
+
+    if (! $screen || $screen->post_type !== ESCTT_REGISTRATION_DOCUMENT_POST_TYPE) {
+        return;
+    }
+
+    wp_enqueue_media();
+    wp_enqueue_script(
+        'esctt-registration-document',
+        plugins_url('assets/registration-document.js', __FILE__),
+        ['media-editor'],
+        '0.1.0',
+        true,
+    );
+    wp_localize_script('esctt-registration-document', 'escttRegistrationDocument', [
+        'title' => __('Choisir un document de saison', 'esctt-content'),
+        'button' => __('Utiliser ce fichier', 'esctt-content'),
+        'empty' => __('Aucun fichier sélectionné.', 'esctt-content'),
+        'selected' => __('Fichier sélectionné : %s', 'esctt-content'),
+    ]);
+}
+
+/**
+ * Render the Admin fields for one generic season document.
+ */
+function esctt_render_registration_document_meta_box(WP_Post $post): void
+{
+    wp_nonce_field('esctt_registration_document', 'esctt_registration_document_nonce');
+    $url = (string) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_URL_META, true);
+    $season = (string) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, true);
+    $attachmentId = (int) get_post_meta($post->ID, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, true);
+    $attachmentUrl = esctt_registration_document_attachment_url($attachmentId);
+    $attachmentLabel = $attachmentId > 0 ? (string) get_the_title($attachmentId) : '';
+    $selectedAttachmentId = $attachmentUrl !== '' ? $attachmentId : 0;
+
+    if ($attachmentLabel === '' && $attachmentUrl !== '') {
+        $attachmentLabel = basename((string) parse_url($attachmentUrl, PHP_URL_PATH));
+    }
+    ?>
+    <p><?php esc_html_e('Donnez au document un nom explicite, par exemple « Règlement intérieur — saison 2026–2027 ».', 'esctt-content'); ?></p>
+    <p>
+        <label for="esctt-registration-document-season"><strong><?php esc_html_e('Saison', 'esctt-content'); ?></strong></label><br>
+        <input class="widefat" type="text" id="esctt-registration-document-season" name="esctt_registration_document_season" value="<?php echo esc_attr($season); ?>" placeholder="2026–2027">
+    </p>
+    <p>
+        <label for="esctt-registration-document-attachment-id"><strong><?php esc_html_e('Fichier du document', 'esctt-content'); ?></strong></label><br>
+        <input type="hidden" id="esctt-registration-document-attachment-id" name="esctt_registration_document_attachment_id" value="<?php echo esc_attr((string) $selectedAttachmentId); ?>">
+        <button type="button" class="button" id="esctt-registration-document-select"><?php esc_html_e('Choisir un fichier', 'esctt-content'); ?></button>
+        <button type="button" class="button-link-delete" id="esctt-registration-document-remove"<?php echo $selectedAttachmentId > 0 ? '' : ' hidden'; ?>><?php esc_html_e('Retirer le fichier', 'esctt-content'); ?></button>
+        <span class="description" id="esctt-registration-document-file-name"><?php echo $attachmentLabel !== '' ? esc_html(sprintf(__('Fichier sélectionné : %s', 'esctt-content'), $attachmentLabel)) : esc_html__('Aucun fichier sélectionné.', 'esctt-content'); ?></span>
+    </p>
+    <p>
+        <label for="esctt-registration-document-url"><strong><?php esc_html_e('URL de repli du document', 'esctt-content'); ?></strong></label><br>
+        <input class="widefat" type="url" id="esctt-registration-document-url" name="esctt_registration_document_url" value="<?php echo esc_attr($url); ?>" placeholder="https://…">
+    </p>
+    <p class="description"><?php echo esc_html(esctt_membership_documents_policy()); ?> <?php esc_html_e('Gérez ici uniquement des documents génériques de saison.', 'esctt-content'); ?></p>
+    <?php
+}
+
+/**
+ * Persist only Admin-managed season metadata; there is no member upload path.
+ */
+function esctt_save_registration_document(int $postId, WP_Post $post): void
+{
+    if (wp_is_post_autosave($postId) || wp_is_post_revision($postId)) {
+        return;
+    }
+
+    if (! current_user_can('edit_post', $postId)) {
+        return;
+    }
+
+    $nonce = isset($_POST['esctt_registration_document_nonce'])
+        ? (string) wp_unslash($_POST['esctt_registration_document_nonce'])
+        : '';
+
+    if (! wp_verify_nonce($nonce, 'esctt_registration_document')) {
+        return;
+    }
+
+    if (isset($_POST['esctt_registration_document_attachment_id'])
+        && is_scalar($_POST['esctt_registration_document_attachment_id'])) {
+        $attachmentId = absint((string) wp_unslash($_POST['esctt_registration_document_attachment_id']));
+
+        if (esctt_registration_document_attachment_url($attachmentId) === '') {
+            $attachmentId = 0;
+        }
+
+        if ($attachmentId === 0) {
+            delete_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META);
+        } else {
+            update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_ATTACHMENT_META, $attachmentId);
+        }
+    }
+
+    $url = isset($_POST['esctt_registration_document_url'])
+        ? esctt_registration_document_url((string) wp_unslash($_POST['esctt_registration_document_url']))
+        : '';
+    $season = isset($_POST['esctt_registration_document_season'])
+        ? sanitize_text_field((string) wp_unslash($_POST['esctt_registration_document_season']))
+        : '';
+
+    update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_URL_META, $url);
+    update_post_meta($postId, ESCTT_REGISTRATION_DOCUMENT_SEASON_META, $season);
+}
 const ESCTT_PARTNER_POST_TYPE = 'esctt_partner';
 const ESCTT_PARTNER_URL_META = '_esctt_partner_url';
 const ESCTT_PARTNER_DESCRIPTION_META = '_esctt_partner_description';
@@ -922,34 +1198,38 @@ function esctt_render_practice_schedules_block(): string
     return $output . '</section>';
 }
 
-add_filter('esctt_page_block_catalog', static function (array $catalog): array {
-    $catalog[] = 'esctt/practice-schedules';
+if (function_exists('add_filter')) {
+    add_filter('esctt_page_block_catalog', static function (array $catalog): array {
+        $catalog[] = 'esctt/practice-schedules';
 
-    return array_values(array_unique($catalog));
-});
+        return array_values(array_unique($catalog));
+    });
+}
 
-add_action('init', 'esctt_register_content_model', 5);
-add_action('init', 'esctt_register_content_meta', 6);
-add_action('init', 'esctt_seed_player_profiles', 20);
-add_action('add_meta_boxes', 'esctt_register_content_meta_boxes');
-add_action('save_post_' . ESCTT_LOCATION_POST_TYPE, 'esctt_save_location');
-add_action('save_post_' . ESCTT_PRACTICE_SLOT_POST_TYPE, 'esctt_save_practice_slot');
-add_action('wp_after_insert_post', 'esctt_demote_invalid_practice_slot', 10, 1);
-add_action('init', static function (): void {
-    register_block_type('esctt/practice-schedules', [
-        'api_version' => '3',
-        'title' => __('Horaires de pratique', 'esctt-content'),
-        'description' => __('Affiche les créneaux publiés regroupés par jour.', 'esctt-content'),
-        'category' => 'design',
-        'icon' => 'calendar-alt',
-        'render_callback' => 'esctt_render_practice_schedules_block',
-        'supports' => [
-            'html' => false,
-            'multiple' => false,
-            'reusable' => false,
-        ],
-    ]);
-});
+if (function_exists('add_action')) {
+    add_action('init', 'esctt_register_content_model', 5);
+    add_action('init', 'esctt_register_content_meta', 6);
+    add_action('init', 'esctt_seed_player_profiles', 20);
+    add_action('add_meta_boxes', 'esctt_register_content_meta_boxes');
+    add_action('save_post_' . ESCTT_LOCATION_POST_TYPE, 'esctt_save_location');
+    add_action('save_post_' . ESCTT_PRACTICE_SLOT_POST_TYPE, 'esctt_save_practice_slot');
+    add_action('wp_after_insert_post', 'esctt_demote_invalid_practice_slot', 10, 1);
+    add_action('init', static function (): void {
+        register_block_type('esctt/practice-schedules', [
+            'api_version' => '3',
+            'title' => __('Horaires de pratique', 'esctt-content'),
+            'description' => __('Affiche les créneaux publiés regroupés par jour.', 'esctt-content'),
+            'category' => 'design',
+            'icon' => 'calendar-alt',
+            'render_callback' => 'esctt_render_practice_schedules_block',
+            'supports' => [
+                'html' => false,
+                'multiple' => false,
+                'reusable' => false,
+            ],
+        ]);
+    });
+}
 /**
  * Return the structured pricing field group used by the admin editor.
  *
@@ -1253,6 +1533,7 @@ function esctt_render_club_menu(): void
         'edit.php?post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-clock',
         'edit.php?post_type=' . ESCTT_IMPORTANT_MESSAGE_POST_TYPE => 'dashicons-warning',
         'edit.php?post_type=' . ESCTT_PARTNER_POST_TYPE => 'dashicons-groups',
+        'edit.php?post_type=' . ESCTT_REGISTRATION_DOCUMENT_POST_TYPE => 'dashicons-media-document',
         'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-tag',
         'esctt-faq' => 'dashicons-testimonial',
         'esctt-pricing' => 'dashicons-money-alt',
@@ -1315,10 +1596,14 @@ add_filter('register_post_type_args', static function (array $args, string $post
     return $args;
 }, 10, 2);
 
-add_action('admin_menu', 'esctt_register_club_menu', 9);
-add_action('admin_menu', 'esctt_register_club_taxonomy_menu', 15);
-add_action('admin_enqueue_scripts', 'esctt_enqueue_club_menu_styles');
-add_action('init', 'esctt_register_partner', 5);
-add_action('init', 'esctt_register_partner_meta', 6);
-add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
-add_action('save_post_' . ESCTT_PARTNER_POST_TYPE, 'esctt_save_partner');
+if (function_exists('add_action')) {
+    add_action('admin_menu', 'esctt_register_club_menu', 9);
+    add_action('admin_menu', 'esctt_register_club_taxonomy_menu', 15);
+    add_action('admin_enqueue_scripts', 'esctt_enqueue_club_menu_styles');
+    add_action('init', 'esctt_register_partner', 5);
+    add_action('init', 'esctt_register_partner_meta', 6);
+    add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
+    add_action('save_post_' . ESCTT_PARTNER_POST_TYPE, 'esctt_save_partner');
+    add_action('admin_enqueue_scripts', 'esctt_enqueue_registration_document_media');
+    esctt_content_bootstrap();
+}
