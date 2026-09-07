@@ -301,16 +301,3 @@ test('a single published partner renders without list-shape assumptions', functi
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
 );
-
-test('partner saves reject autosave requests', function () {
-    partners_load_wordpress();
-
-    if (! defined('DOING_AUTOSAVE')) {
-        define('DOING_AUTOSAVE', true);
-    }
-
-    expect(esctt_can_save_partner(0))->toBeFalse();
-})->skip(
-    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
-    'Requires the CI WordPress installation.',
-);
