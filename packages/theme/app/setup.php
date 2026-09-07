@@ -101,17 +101,6 @@ function pricing_pass_plus_label(mixed $value): string
  */
 function pricing_model(): array
 {
-    if (! function_exists('get_field')) {
-        // @codeCoverageIgnoreStart
-        return [
-            'tariff_categories' => [],
-            'player_profiles' => [],
-            'jersey_price' => null,
-            'pass_plus_acceptance' => '',
-        ];
-        // @codeCoverageIgnoreEnd
-    }
-
     $categories = get_field('tariff_categories', 'option');
     $profiles = get_field('player_profiles', 'option');
 

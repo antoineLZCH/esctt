@@ -109,6 +109,8 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
         'pass_plus_acceptance' => '',
     ]);
 
+    $missing = \App\pricing_matrix([]);
+
     update_field('tariff_categories', [['label' => 'Configured category']], 'option');
     update_field('player_profiles', [['label' => 'Configured profile']], 'option');
     $configured = \App\pricing_model();
@@ -121,6 +123,7 @@ test('pricing helpers preserve explicit empty and nonnumeric values', function (
         ->and(\App\pricing_pass_plus_label('yes'))->toBe('Oui')
         ->and(\App\pricing_pass_plus_label('no'))->toBe('Non')
         ->and($empty)->toContain('Ajoutez une catégorie tarifaire')
+        ->and($missing)->toContain('Ajoutez une catégorie tarifaire')
         ->and($invalid)->toContain('Ajoutez une catégorie tarifaire');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
