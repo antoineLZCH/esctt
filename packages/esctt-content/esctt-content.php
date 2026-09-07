@@ -603,9 +603,11 @@ function esctt_pricing_field_group(): array
 
 function esctt_register_pricing_fields(): void
 {
+    // @codeCoverageIgnoreStart
     if (! function_exists('acf_add_options_page') || ! function_exists('acf_add_local_field_group')) {
         return;
     }
+    // @codeCoverageIgnoreEnd
 
     acf_add_options_page([
         'page_title' => __('Tarifs du club', 'esctt-content'),
