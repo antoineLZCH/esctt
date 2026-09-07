@@ -1,0 +1,69 @@
+.esctt-club-menu__intro {
+    max-width: 720px;
+    margin: 8px 0 24px;
+    color: #50575e;
+    font-size: 14px;
+}
+
+.esctt-club-menu__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+    max-width: 1120px;
+}
+
+.esctt-club-menu__card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 82px;
+    padding: 18px 20px;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+    color: #1d2327;
+    text-decoration: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.esctt-club-menu__card:hover {
+    border-color: var(--wp-admin-theme-color, #2271b1);
+    box-shadow: 0 5px 14px rgb(0 0 0 / 9%);
+    color: #1d2327;
+    transform: translateY(-2px);
+}
+
+.esctt-club-menu__card:focus-visible {
+    border-color: var(--wp-admin-theme-color, #2271b1);
+    box-shadow: 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+.esctt-club-menu__icon {
+    display: grid;
+    flex: 0 0 42px;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: #f0f6fc;
+    color: var(--wp-admin-theme-color, #2271b1);
+    font-size: 22px;
+}
+
+.esctt-club-menu__title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .esctt-club-menu__card {
+        transition: none;
+    }
+
+    .esctt-club-menu__card:hover {
+        transform: none;
+    }
+}

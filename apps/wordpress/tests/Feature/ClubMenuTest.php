@@ -43,10 +43,30 @@ test('club content is grouped under one admin menu', function () {
         ->and($optionsPages['esctt-faq']['parent_slug'])->toBe(ESCTT_CLUB_MENU_SLUG)
         ->and($optionsPages['esctt-pricing']['parent_slug'])->toBe(ESCTT_CLUB_MENU_SLUG);
 
+    esctt_enqueue_club_menu_styles('toplevel_page_' . ESCTT_CLUB_MENU_SLUG);
+    expect(wp_style_is('esctt-club-menu', 'enqueued'))->toBeTrue();
+
+    wp_dequeue_style('esctt-club-menu');
+    esctt_enqueue_club_menu_styles('settings_page_unrelated');
+    expect(wp_style_is('esctt-club-menu', 'enqueued'))->toBeFalse();
+
+    $submenu[ESCTT_CLUB_MENU_SLUG][] = [
+        'Autre contenu',
+        'edit_posts',
+        'edit.php?post_type=esctt_unknown',
+        'Autre contenu',
+    ];
+
     ob_start();
     esctt_render_club_menu();
     $clubPage = ob_get_clean();
-    expect($clubPage)->toContain('>Club<', 'Gérez les contenus du club depuis le sous-menu.');
+    expect($clubPage)->toContain(
+        'esctt-club-menu__grid',
+        'dashicons-location',
+        'dashicons-warning',
+        'dashicons-admin-generic',
+        'Gérez les contenus du club depuis cette page ou le sous-menu.',
+    );
 
     wp_set_current_user(0);
     ob_start();

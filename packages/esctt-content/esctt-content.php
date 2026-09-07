@@ -1242,12 +1242,56 @@ function esctt_render_club_menu(): void
     if (! current_user_can('edit_posts')) {
         return;
     }
+
+    global $submenu;
+    $clubItems = array_values(array_filter(
+        $submenu[ESCTT_CLUB_MENU_SLUG] ?? [],
+        static fn(array $item): bool => ($item[2] ?? '') !== ESCTT_CLUB_MENU_SLUG,
+    ));
+    $icons = [
+        'edit.php?post_type=' . ESCTT_LOCATION_POST_TYPE => 'dashicons-location',
+        'edit.php?post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-clock',
+        'edit.php?post_type=' . ESCTT_IMPORTANT_MESSAGE_POST_TYPE => 'dashicons-warning',
+        'edit.php?post_type=' . ESCTT_PARTNER_POST_TYPE => 'dashicons-groups',
+        'edit-tags.php?taxonomy=' . ESCTT_PLAYER_PROFILE_TAXONOMY . '&post_type=' . ESCTT_PRACTICE_SLOT_POST_TYPE => 'dashicons-tag',
+        'esctt-faq' => 'dashicons-testimonial',
+        'esctt-pricing' => 'dashicons-money-alt',
+    ];
     ?>
-    <div class="wrap">
+    <div class="wrap esctt-club-menu">
         <h1><?php esc_html_e('Club', 'esctt-content'); ?></h1>
-        <p><?php esc_html_e('Gérez les contenus du club depuis le sous-menu.', 'esctt-content'); ?></p>
+        <p class="esctt-club-menu__intro"><?php esc_html_e('Gérez les contenus du club depuis cette page ou le sous-menu.', 'esctt-content'); ?></p>
+        <nav class="esctt-club-menu__grid" aria-label="<?php esc_attr_e('Navigation du club', 'esctt-content'); ?>">
+            <?php foreach ($clubItems as $item) :
+                $slug = (string) ($item[2] ?? '');
+                $title = (string) ($item[0] ?? '');
+                $url = str_contains($slug, '.php')
+                    ? admin_url($slug)
+                    : add_query_arg('page', $slug, admin_url('admin.php'));
+                $icon = $icons[$slug] ?? 'dashicons-admin-generic';
+                ?>
+                <a class="esctt-club-menu__card" href="<?php echo esc_url($url); ?>">
+                    <span class="dashicons <?php echo esc_attr($icon); ?> esctt-club-menu__icon" aria-hidden="true"></span>
+                    <span class="esctt-club-menu__title"><?php echo esc_html($title); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
     </div>
     <?php
+}
+
+function esctt_enqueue_club_menu_styles(string $hook): void
+{
+    if ($hook !== 'toplevel_page_' . ESCTT_CLUB_MENU_SLUG) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'esctt-club-menu',
+        plugins_url('assets/club-menu.css', __FILE__),
+        [],
+        '0.1.0',
+    );
 }
 
 function esctt_register_club_menu(): void
@@ -1273,6 +1317,7 @@ add_filter('register_post_type_args', static function (array $args, string $post
 
 add_action('admin_menu', 'esctt_register_club_menu', 9);
 add_action('admin_menu', 'esctt_register_club_taxonomy_menu', 15);
+add_action('admin_enqueue_scripts', 'esctt_enqueue_club_menu_styles');
 add_action('init', 'esctt_register_partner', 5);
 add_action('init', 'esctt_register_partner_meta', 6);
 add_action('add_meta_boxes_' . ESCTT_PARTNER_POST_TYPE, 'esctt_register_partner_meta_box');
