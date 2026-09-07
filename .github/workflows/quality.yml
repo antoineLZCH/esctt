@@ -2,8 +2,34 @@ name: Quality gates
 
 on:
   pull_request:
+    paths:
+      - '.github/**'
+      - 'apps/wordpress/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yml'
   push:
     branches: [main]
+    paths:
+      - '.github/**'
+      - 'apps/wordpress/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'playwright.config.js'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yml'
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -35,8 +61,13 @@ jobs:
       app: ${{ steps.filter.outputs.app }}
       theme: ${{ steps.filter.outputs.theme }}
       plugin: ${{ steps.filter.outputs.plugin }}
+      php_dependencies: ${{ steps.filter.outputs.php_dependencies }}
+      node_dependencies: ${{ steps.filter.outputs.node_dependencies }}
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -67,6 +98,13 @@ jobs:
               - 'packages/theme/**'
             plugin:
               - 'packages/esctt-content/**'
+            php_dependencies:
+              - '**/composer.json'
+              - '**/composer.lock'
+            node_dependencies:
+              - '**/package.json'
+              - '**/pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
 
   php:
     name: PHP tests and coverage
@@ -78,6 +116,7 @@ jobs:
        needs.changes.outputs.theme == 'true' ||
        needs.changes.outputs.plugin == 'true')
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     services:
       database:
         image: mariadb:11.4
@@ -95,6 +134,8 @@ jobs:
           --health-retries=20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -107,17 +148,23 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm setup:site
       - run: bash scripts/ci/provision-wordpress.sh
-      - run: ESCTT_WORDPRESS_TESTS=1 pnpm --filter @esctt/wordpress test
       - run: pnpm test:coverage
-      - if: always()
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: php-coverage
           path: apps/wordpress/build/coverage
           if-no-files-found: ignore
+          retention-days: 3
 
   theme:
     name: Theme gate
@@ -126,8 +173,11 @@ jobs:
       needs.changes.outputs.relevant == 'true' &&
       (needs.changes.outputs.shared == 'true' || needs.changes.outputs.theme == 'true')
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.1
@@ -135,7 +185,7 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm test:js
       - run: pnpm theme:build
 
@@ -146,8 +196,11 @@ jobs:
       needs.changes.outputs.relevant == 'true' &&
       (needs.changes.outputs.shared == 'true' || needs.changes.outputs.plugin == 'true')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -159,13 +212,18 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm --filter @esctt/wordpress composer:install
       - run: pnpm --filter @esctt/esctt-content check
-      - run: pnpm --filter @esctt/wordpress test
 
   public:
-    name: Public / ${{ matrix.gate }}
+    name: Public browser gates
     needs: changes
     if: >-
       needs.changes.outputs.relevant == 'true' &&
@@ -174,10 +232,7 @@ jobs:
        needs.changes.outputs.theme == 'true' ||
        needs.changes.outputs.plugin == 'true')
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        gate: [e2e, a11y]
+    timeout-minutes: 15
     services:
       database:
         image: mariadb:11.4
@@ -195,6 +250,8 @@ jobs:
           --health-retries=20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -206,26 +263,43 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-v1-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-v1-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm setup:site
       - run: bash scripts/ci/provision-wordpress.sh
       - run: bash scripts/ci/start-wordpress.sh
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:${{ matrix.gate }}
-      - if: always()
+      - run: pnpm test:e2e
+      - run: pnpm test:a11y
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-${{ matrix.gate }}
+          name: playwright
           path: artifacts/playwright
           if-no-files-found: ignore
+          retention-days: 3
 
   static:
     name: Static analysis
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -237,7 +311,13 @@ jobs:
         with:
           node-version: 22.12.0
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: apps/wordpress/vendor
+          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
+          restore-keys: |
+            composer-v1-${{ runner.os }}-php-8.4-
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm --filter @esctt/wordpress composer:install
       - run: pnpm check:scaffold
       - run: pnpm check:php
@@ -248,6 +328,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
@@ -255,26 +336,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: shivammathur/setup-php@v2
+        if: needs.changes.outputs.php_dependencies == 'true'
         with:
           php-version: '8.4'
       - uses: pnpm/action-setup@v4
+        if: needs.changes.outputs.node_dependencies == 'true'
         with:
           version: 10.33.1
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.node_dependencies == 'true'
         with:
           node-version: 22.12.0
           cache: pnpm
       - run: composer audit --locked --no-interaction --abandoned=fail
+        if: needs.changes.outputs.php_dependencies == 'true'
         working-directory: apps/wordpress
       - run: pnpm audit --audit-level=high
+        if: needs.changes.outputs.node_dependencies == 'true'
       - name: Detect Dependency Graph support
         id: dependency-graph
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' &&
+          (needs.changes.outputs.php_dependencies == 'true' ||
+           needs.changes.outputs.node_dependencies == 'true')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -285,7 +375,9 @@ jobs:
             echo 'available=false' >> "$GITHUB_OUTPUT"
             echo "::warning::Dependency Review skipped because Dependency Graph status is $status."
           fi
-      - if: github.event_name == 'pull_request' && steps.dependency-graph.outputs.available == 'true'
+      - if: >-
+          github.event_name == 'pull_request' &&
+          steps.dependency-graph.outputs.available == 'true'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
@@ -295,6 +387,7 @@ jobs:
     if: always()
     needs: [changes, php, theme, plugin, public, static, security]
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Require selected gates to pass
         if: >-
