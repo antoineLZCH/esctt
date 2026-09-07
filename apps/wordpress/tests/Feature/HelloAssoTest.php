@@ -54,6 +54,7 @@ test('the HelloAsso block accepts only membership URLs and derives the widget UR
         ->and(\App\helloasso_membership_url('https://example.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://www.helloasso.com/not-a-membership'))->toBeNull()
         ->and(\App\helloasso_membership_url('javascript:alert(1)'))->toBeNull()
+        ->and(\App\helloasso_membership_url('http://www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('http://'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://[invalid'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://www.helloasso.com'))->toBeNull()

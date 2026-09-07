@@ -70,9 +70,15 @@ function helloasso_membership_url(string $url): ?string
     $host = strtolower((string) ($parts['host'] ?? ''));
     $path = (string) ($parts['path'] ?? '');
 
-    if ($scheme !== 'https'
-        || ! in_array($host, ['helloasso.com', 'www.helloasso.com'], true)
-        || ! preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/?$~i', $path)) {
+    if ($scheme !== 'https') {
+        return null;
+    }
+
+    if (! in_array($host, ['helloasso.com', 'www.helloasso.com'], true)) {
+        return null;
+    }
+
+    if (! preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/?$~i', $path)) {
         return null;
     }
 
