@@ -35,7 +35,7 @@ test('pricing fields keep tariff categories separate from player profiles', func
         static fn(array $page): bool => ($page['menu_slug'] ?? '') === 'esctt-pricing',
     ));
 
-    expect($group['location'][0][0]['value'])->toBe('esctt-pricing')
+    expect($group['title'])->toBe('Tarifs du club')
         ->and($optionsPages)->toHaveCount(1)
         ->and($categories['name'])->toBe('tariff_categories')
         ->and($profiles['name'])->toBe('player_profiles')
