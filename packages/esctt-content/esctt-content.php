@@ -1913,6 +1913,7 @@ function esctt_store_page_redirects(int $postId, WP_Post $postAfter): void
     foreach ($snapshot as $pageId => $oldPath) {
         $page = get_post((int) $pageId);
         $newPath = $page instanceof WP_Post ? esctt_page_path($page) : '';
+        error_log(sprintf('[DEBUG-esctt] path id=%d old=%s new=%s', (int) $pageId, (string) $oldPath, $newPath));
 
         if (! $page instanceof WP_Post || $page->post_status !== 'publish' || $newPath === '' || $oldPath === $newPath) {
             continue;
@@ -1965,12 +1966,15 @@ function esctt_register_inventoried_redirects(): void
 function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
 {
     $sourcePath = esctt_redirect_source_path($sourcePath);
+    $targetValid = esctt_redirect_target_is_valid($targetId);
+    error_log(sprintf('[DEBUG-esctt] upsert source=%s target=%d valid=%s', $sourcePath, $targetId, $targetValid ? 'true' : 'false'));
 
-    if ($sourcePath === '' || ! esctt_redirect_target_is_valid($targetId)) {
+    if ($sourcePath === '' || ! $targetValid) {
         return;
     }
 
     $targetPath = esctt_redirect_path_from_url((string) get_permalink($targetId));
+    error_log(sprintf('[DEBUG-esctt] target-path=%s', $targetPath));
 
     if ($targetPath === '' || $sourcePath === $targetPath) {
         return;
