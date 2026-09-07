@@ -46,13 +46,16 @@ function sport_life_helloasso_url(string $url): ?string
 
 function render_sport_life(array $attributes): string
 {
-    $helloAssoUrl = sport_life_helloasso_url((string) ($attributes['helloAssoUrl'] ?? ''));
-    $cta = $helloAssoUrl === null ? '' : sprintf(
-        '<p class="esctt-sport-life__cta"><a class="wp-element-button" href="%s" target="_blank" rel="noopener noreferrer">%s <span class="screen-reader-text">%s</span></a></p>',
-        esc_url($helloAssoUrl),
-        esc_html__('S’inscrire au tournoi des familles sur HelloAsso', 'esctt'),
-        esc_html__('(ouvre dans une nouvelle fenêtre)', 'esctt'),
-    );
+    $helloAssoUrl = sport_life_helloasso_url((string) array_merge(['helloAssoUrl' => ''], $attributes)['helloAssoUrl']);
+    $cta = implode('', array_map(
+        static fn (string $url): string => sprintf(
+            '<p class="esctt-sport-life__cta"><a class="wp-element-button" href="%s" target="_blank" rel="noopener noreferrer">%s <span class="screen-reader-text">%s</span></a></p>',
+            esc_url($url),
+            esc_html__('S’inscrire au tournoi des familles sur HelloAsso', 'esctt'),
+            esc_html__('(ouvre dans une nouvelle fenêtre)', 'esctt'),
+        ),
+        array_filter([$helloAssoUrl]),
+    ));
 
     return sprintf(
         '<section class="esctt-sport-life" aria-labelledby="esctt-sport-life-title">
