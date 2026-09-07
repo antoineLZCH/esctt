@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/sport-life',
     'core/paragraph',
     'core/heading',
     'core/image',
@@ -33,6 +34,74 @@ function page_block_catalog(): array
     $catalog = apply_filters('esctt_page_block_catalog', PAGE_BLOCK_CATALOG);
 
     return $catalog;
+}
+
+function sport_life_helloasso_url(string $url): ?string
+{
+    $url = esc_url_raw(trim($url));
+    $parts = wp_parse_url($url);
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    $host = strtolower((string) ($parts['host'] ?? ''));
+
+    if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+        return null;
+    }
+
+    if ($host !== 'helloasso.com' && ! str_ends_with($host, '.helloasso.com')) {
+        return null;
+    }
+
+    return $url;
+}
+
+function render_sport_life(array $attributes): string
+{
+    $helloAssoUrl = sport_life_helloasso_url((string) ($attributes['helloAssoUrl'] ?? ''));
+    $cta = $helloAssoUrl === null ? '' : sprintf(
+        '<p class="esctt-sport-life__cta"><a class="wp-element-button" href="%s" target="_blank" rel="noopener noreferrer">%s <span class="screen-reader-text">%s</span></a></p>',
+        esc_url($helloAssoUrl),
+        esc_html__('S’inscrire au tournoi des familles sur HelloAsso', 'esctt'),
+        esc_html__('(ouvre dans une nouvelle fenêtre)', 'esctt'),
+    );
+
+    return sprintf(
+        '<section class="esctt-sport-life" aria-labelledby="esctt-sport-life-title">
+            <div class="esctt-sport-life__intro">
+                <article class="esctt-sport-life__tournament">
+                    <p class="esctt-sport-life__eyebrow">%s</p>
+                    <h2 id="esctt-sport-life-title">%s</h2>
+                    <p>%s</p>
+                    <p>%s</p>
+                    %s
+                </article>
+                <article class="esctt-sport-life__competitions" aria-labelledby="esctt-sport-life-competitions-title">
+                    <p class="esctt-sport-life__eyebrow">%s</p>
+                    <h2 id="esctt-sport-life-competitions-title">%s</h2>
+                    <p>%s</p>
+                </article>
+            </div>
+            <figure class="esctt-sport-life__jersey">
+                <div class="esctt-sport-life__photos">
+                    <img src="%s" alt="%s" width="900" height="1600" loading="lazy">
+                    <img src="%s" alt="%s" width="900" height="1600" loading="lazy">
+                </div>
+                <figcaption>%s</figcaption>
+            </figure>
+        </section>',
+        esc_html__('Tournoi interne', 'esctt'),
+        esc_html__('Tournoi des familles', 'esctt'),
+        esc_html__('Le tournoi des familles est le temps fort des tournois internes du club.', 'esctt'),
+        esc_html__('Un rendez-vous pour partager le tennis de table en famille et entre membres.', 'esctt'),
+        $cta,
+        esc_html__('Pratique sportive', 'esctt'),
+        esc_html__('Compétitions FFTT', 'esctt'),
+        esc_html__('La compétition FFTT complète la vie du club. Cette présentation reste volontairement concise, sans résultats ni calendrier détaillé.', 'esctt'),
+        esc_url(Vite::asset('resources/images/maillot-face.jpg')),
+        esc_attr__('Photo du maillot de l’ES Colombienne vu de face', 'esctt'),
+        esc_url(Vite::asset('resources/images/maillot-dos.jpg')),
+        esc_attr__('Photo du maillot de l’ES Colombienne vu de dos', 'esctt'),
+        esc_html__('Maillot actuel du club, photographié de face et de dos.', 'esctt'),
+    );
 }
 
 function page_structure_error(string $content): ?WP_Error
@@ -174,6 +243,22 @@ add_action('init', function (): void {
                 ]),
             );
         },
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
+
+    register_block_type('esctt/sport-life', [
+        'api_version' => '3',
+        'attributes' => [
+            'helloAssoUrl' => [
+                'type' => 'string',
+                'default' => '',
+            ],
+        ],
+        'render_callback' => __NAMESPACE__ . '\\render_sport_life',
         'supports' => [
             'html' => false,
             'multiple' => false,
