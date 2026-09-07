@@ -281,6 +281,40 @@ test('published slots render by day and start time with live location and profil
     'Requires the CI WordPress installation.',
 );
 
+test('the schedule comparison keeps every slot visible with profile status text', function () {
+    schedules_load_wordpress();
+
+    $locationId = schedules_create_location('Salle comparaison', '3 avenue du Club, Colombes');
+    $jeuneSlotId = schedules_create_slot('Créneau jeune', 1, '18:00', '20:00', $locationId, 'jeune');
+    $sharedSlotId = schedules_create_slot('Créneau partagé', 2, '20:00', '22:00', $locationId, 'adulte-loisir');
+
+    try {
+        $html = do_blocks('<!-- wp:esctt/practice-schedules /-->');
+
+        expect($html)->toContain('Comparer les créneaux par profil')
+            ->and($html)->toContain('name="esctt-practice-profile"')
+            ->and($html)->toContain('value="jeune"')
+            ->and($html)->toContain('value="adulte-loisir"')
+            ->and($html)->toContain('value="adulte-competition"')
+            ->and($html)->toContain('checked')
+            ->and($html)->toContain('Grille hebdomadaire')
+            ->and($html)->toContain('Axe horaire')
+            ->and($html)->toContain('data-profile-slugs="jeune"')
+            ->and($html)->toContain('data-profile-slugs="adulte-loisir"')
+            ->and($html)->toContain('Adapté au profil Jeune')
+            ->and($html)->toContain('Ce créneau n’est pas adapté au profil Jeune')
+            ->and(substr_count($html, 'class="esctt-practice-slot"'))->toBe(2)
+            ->and(substr_count($html, 'class="esctt-practice-day"'))->toBe(7);
+    } finally {
+        wp_delete_post($jeuneSlotId, true);
+        wp_delete_post($sharedSlotId, true);
+        wp_delete_post($locationId, true);
+    }
+})->skip(
+    fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
+    'Requires the CI WordPress installation.',
+);
+
 test('autosave requests cannot save content fields', function () {
     if (! defined('DOING_AUTOSAVE')) {
         define('DOING_AUTOSAVE', true);

@@ -103,6 +103,49 @@ fi
 "${wp[@]}" option update show_on_front page
 "${wp[@]}" option update page_on_front "$home_id"
 
+schedule_location_id="$("${wp[@]}" post list --post_type=esctt_location --name=ci-schedule-location --field=ID --format=ids)"
+if [[ -z "$schedule_location_id" ]]; then
+    schedule_location_id="$("${wp[@]}" post create \
+        --post_type=esctt_location \
+        --post_status=publish \
+        --post_title='Salle CI' \
+        --post_name=ci-schedule-location \
+        --porcelain)"
+fi
+"${wp[@]}" post update "$schedule_location_id" --post_status=publish --post_title='Salle CI'
+"${wp[@]}" post meta update "$schedule_location_id" _esctt_location_address '1 avenue du Club, Colombes'
+
+ensure_schedule_slot() {
+    local slug="$1"
+    local title="$2"
+    local day="$3"
+    local start="$4"
+    local end="$5"
+    local profile="$6"
+    local slot_id
+
+    slot_id="$("${wp[@]}" post list --post_type=esctt_practice_slot --name="$slug" --field=ID --format=ids)"
+    if [[ -z "$slot_id" ]]; then
+        slot_id="$("${wp[@]}" post create \
+            --post_type=esctt_practice_slot \
+            --post_status=draft \
+            --post_title="$title" \
+            --post_name="$slug" \
+            --porcelain)"
+    fi
+
+    "${wp[@]}" post update "$slot_id" --post_status=draft --post_title="$title"
+    "${wp[@]}" post meta update "$slot_id" _esctt_practice_day "$day"
+    "${wp[@]}" post meta update "$slot_id" _esctt_practice_start "$start"
+    "${wp[@]}" post meta update "$slot_id" _esctt_practice_end "$end"
+    "${wp[@]}" post meta update "$slot_id" _esctt_practice_location "$schedule_location_id"
+    "${wp[@]}" post term set "$slot_id" "$profile" esctt_player_profile --by=slug
+    "${wp[@]}" post update "$slot_id" --post_status=publish
+}
+
+ensure_schedule_slot ci-schedule-young 'Découverte jeunes' 1 18:00 20:00 jeune
+ensure_schedule_slot ci-schedule-leisure 'Jeu libre adultes' 2 20:00 22:00 adulte-loisir
+
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
 important_message_args=(
     --post_title='CI important message'

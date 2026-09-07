@@ -70,6 +70,45 @@ for (const viewport of viewports) {
     });
 }
 
+test('visitors can compare every schedule slot by profile at required widths', async ({ page }) => {
+    for (const viewport of viewports) {
+        await page.setViewportSize({ width: viewport.width, height: 900 });
+        await page.goto('/');
+
+        const schedule = page.locator('.esctt-practice-schedules');
+        const slots = schedule.locator('.esctt-practice-slot');
+        const slotCount = await slots.count();
+
+        expect(slotCount).toBeGreaterThan(1);
+        await expect(schedule.getByRole('radio')).toHaveCount(3);
+        await expect(schedule.getByRole('region', { name: 'Grille hebdomadaire' })).toBeVisible();
+        await expect(schedule.locator('.esctt-practice-day')).toHaveCount(7);
+        await expect(schedule.locator('[data-profile-status]:not([hidden])')).toHaveCount(slotCount);
+
+        const leisure = schedule.getByRole('radio', { name: 'Adulte loisir', exact: true });
+        await leisure.focus();
+        await page.keyboard.press('Space');
+        await expect(leisure).toBeChecked();
+        await expect(schedule.locator('[data-profile-status]:not([hidden])')).toHaveCount(slotCount);
+        await expect(schedule.locator('[data-profile-status="adulte-loisir"][data-profile-match="true"]:not([hidden])')).toHaveCount(1);
+        await expect(schedule.locator('.esctt-practice-slot.is-match')).toHaveCount(1);
+        await expect(schedule.getByText(/Adulte loisir sélectionné/)).toBeVisible();
+        await expect(slots).toHaveCount(slotCount);
+
+        const dimensions = await page.evaluate(() => ({
+            clientWidth: document.documentElement.clientWidth,
+            scrollWidth: document.documentElement.scrollWidth,
+        }));
+        expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+
+        if (viewport.width >= 768) {
+            await expect(schedule.locator('.esctt-practice-time-axis')).toBeVisible();
+        } else {
+            await expect(schedule.locator('.esctt-practice-time-axis')).toBeHidden();
+        }
+    }
+});
+
 test('skip links move focus to content, schedules, and pricing', async ({ page }) => {
     await page.goto('/');
 

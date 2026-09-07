@@ -1140,6 +1140,7 @@ function esctt_published_practice_slots(): array
         $locationId = (int) get_post_meta($post->ID, ESCTT_PRACTICE_LOCATION_META, true);
         $profileTerms = wp_get_post_terms($post->ID, ESCTT_PLAYER_PROFILE_TAXONOMY);
         $profileNames = is_wp_error($profileTerms) ? [] : wp_list_pluck($profileTerms, 'name');
+        $profileSlugs = is_wp_error($profileTerms) ? [] : wp_list_pluck($profileTerms, 'slug');
         $day = (int) get_post_meta($post->ID, ESCTT_PRACTICE_DAY_META, true);
         $location = get_post($locationId);
 
@@ -1152,6 +1153,7 @@ function esctt_published_practice_slots(): array
             'location_name' => get_the_title($location),
             'location_address' => (string) get_post_meta($locationId, ESCTT_LOCATION_ADDRESS_META, true),
             'profiles' => $profileNames,
+            'profile_slugs' => $profileSlugs,
         ];
     }
 
@@ -1165,37 +1167,79 @@ function esctt_published_practice_slots(): array
 function esctt_render_practice_schedules_block(): string
 {
     $groups = [];
+    $profiles = esctt_player_profiles();
+    $selectedProfile = (string) array_key_first($profiles);
 
     foreach (esctt_published_practice_slots() as $slot) {
         $groups[$slot['day']][] = $slot;
     }
 
-    $output = '<section class="esctt-practice-schedules" aria-labelledby="esctt-practice-schedules-title">';
+    $output = '<section class="esctt-practice-schedules" data-schedule-comparison aria-labelledby="esctt-practice-schedules-title">';
     $output .= '<h2 id="esctt-practice-schedules-title">' . esc_html__('Horaires d’entraînement', 'esctt-content') . '</h2>';
 
     if ($groups === []) {
         return $output . '<p>' . esc_html__('Aucun créneau publié pour le moment.', 'esctt-content') . '</p></section>';
     }
 
-    foreach ($groups as $daySlots) {
-        $output .= '<section class="esctt-practice-day">';
-        $output .= '<h3>' . esc_html($daySlots[0]['day_label']) . '</h3><ul>';
+    $output .= '<fieldset class="esctt-practice-profile-filter">';
+    $output .= '<legend>' . esc_html__('Comparer les créneaux par profil', 'esctt-content') . '</legend>';
+    $output .= '<div class="esctt-practice-profile-options">';
+    foreach ($profiles as $slug => $name) {
+        $inputId = 'esctt-practice-profile-' . sanitize_key($slug);
+        $output .= '<label for="' . esc_attr($inputId) . '">';
+        $output .= '<input id="' . esc_attr($inputId) . '" type="radio" name="esctt-practice-profile" value="' . esc_attr($slug) . '" data-profile-label="' . esc_attr($name) . '"' . checked($slug, $selectedProfile, false) . '>';
+        $output .= esc_html($name) . '</label>';
+    }
+    $output .= '</div></fieldset>';
+    $output .= '<p class="esctt-practice-profile-help" data-profile-selected role="status" aria-live="polite">' . esc_html__('Jeune sélectionné : les créneaux adaptés sont indiqués par du texte. Tous les créneaux restent visibles.', 'esctt-content') . '</p>';
+    $output .= '<div class="esctt-practice-grid" role="region" tabindex="0" aria-label="' . esc_attr__('Grille hebdomadaire', 'esctt-content') . '">';
+    $output .= '<div class="esctt-practice-time-axis" aria-label="' . esc_attr__('Axe horaire', 'esctt-content') . '"><strong>' . esc_html__('Heure', 'esctt-content') . '</strong>';
+    for ($hour = 0; $hour < 24; $hour++) {
+        $time = sprintf('%02d:00', $hour);
+        $output .= '<time datetime="' . esc_attr($time) . '">' . esc_html($time) . '</time>';
+    }
+    $output .= '</div>';
 
-        foreach ($daySlots as $slot) {
-            $profiles = implode(', ', array_map(static fn(string $profile): string => esc_html($profile), $slot['profiles']));
-            $output .= '<li class="esctt-practice-slot">';
-            $output .= '<time datetime="' . esc_attr($slot['start']) . '">' . esc_html($slot['start']) . '</time>';
-            $output .= ' – <time datetime="' . esc_attr($slot['end']) . '">' . esc_html($slot['end']) . '</time>';
-            $output .= ' <strong>' . esc_html($slot['title']) . '</strong>';
-            $output .= '<span class="esctt-practice-profiles">' . esc_html($profiles) . '</span>';
+    foreach (esctt_practice_days() as $day => $dayLabel) {
+        $output .= '<section class="esctt-practice-day" aria-labelledby="esctt-practice-day-' . esc_attr((string) $day) . '">';
+        $output .= '<h3 id="esctt-practice-day-' . esc_attr((string) $day) . '">' . esc_html($dayLabel) . '</h3><ul>';
+
+        foreach ($groups[$day] ?? [] as $slot) {
+            $slotProfiles = implode(', ', $slot['profiles']);
+            $profileSlugs = array_map('sanitize_key', $slot['profile_slugs']);
+            $startMinutes = ((int) substr($slot['start'], 0, 2) * 60) + (int) substr($slot['start'], 3, 2);
+            $endMinutes = ((int) substr($slot['end'], 0, 2) * 60) + (int) substr($slot['end'], 3, 2);
+            if ($endMinutes <= $startMinutes) {
+                $endMinutes += 24 * 60;
+            }
+            $gridRow = 1 + (int) floor($startMinutes / 60);
+            $gridSpan = max(1, (int) ceil(($endMinutes - $startMinutes) / 60));
+            $slotStyle = sprintf('grid-row: %d / span %d;', $gridRow, $gridSpan);
+
+            $output .= '<li class="esctt-practice-slot" data-profile-slugs="' . esc_attr(implode(' ', $profileSlugs)) . '" style="' . esc_attr($slotStyle) . '">';
+            $output .= '<span class="esctt-practice-slot__time"><time datetime="' . esc_attr($slot['start']) . '">' . esc_html($slot['start']) . '</time> – <time datetime="' . esc_attr($slot['end']) . '">' . esc_html($slot['end']) . '</time></span>';
+            $output .= '<strong>' . esc_html($slot['title']) . '</strong>';
+            $output .= '<span class="esctt-practice-profiles">' . esc_html($slotProfiles) . '</span>';
+            foreach ($profiles as $profileSlug => $profileName) {
+                $isMatch = in_array($profileSlug, $profileSlugs, true);
+                $status = $isMatch
+                    ? sprintf(__('Adapté au profil %s', 'esctt-content'), $profileName)
+                    : sprintf(__('Ce créneau n’est pas adapté au profil %s', 'esctt-content'), $profileName);
+                $hiddenAttribute = $profileSlug === $selectedProfile ? '' : ' hidden';
+                $output .= '<span class="esctt-practice-slot__status" data-profile-status="' . esc_attr($profileSlug) . '" data-profile-match="' . ($isMatch ? 'true' : 'false') . '"' . $hiddenAttribute . '>' . esc_html($status) . '</span>';
+            }
             $output .= '<span class="esctt-practice-location"><strong>' . esc_html($slot['location_name']) . '</strong>: ' . nl2br(esc_html($slot['location_address'])) . '</span>';
             $output .= '</li>';
+        }
+
+        if (($groups[$day] ?? []) === []) {
+            $output .= '<li class="esctt-practice-day-empty">' . esc_html__('Aucun créneau', 'esctt-content') . '</li>';
         }
 
         $output .= '</ul></section>';
     }
 
-    return $output . '</section>';
+    return $output . '</div></section>';
 }
 
 if (function_exists('add_filter')) {
