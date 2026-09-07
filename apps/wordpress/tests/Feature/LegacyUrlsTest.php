@@ -135,6 +135,15 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
     $descendantId = legacy_urls_page('Redirect descendant', 'redirect-descendant-' . wp_generate_password(6, false, false), $ancestorId);
     $cycleAId = legacy_urls_page('Redirect cycle A', 'redirect-cycle-a-' . wp_generate_password(6, false, false));
     $cycleBId = legacy_urls_page('Redirect cycle B', 'redirect-cycle-b-' . wp_generate_password(6, false, false), $cycleAId);
+    $revisionId = wp_insert_post([
+        'post_type' => 'revision',
+        'post_parent' => $redirectId,
+        'post_status' => 'inherit',
+        'post_title' => 'Redirect revision fixture',
+    ], true);
+    if (is_wp_error($revisionId)) {
+        throw new RuntimeException('Unable to create redirect revision fixture.');
+    }
     global $wpdb;
     $wpdb->update($wpdb->posts, ['post_parent' => $cycleBId], ['ID' => $cycleAId]);
     clean_post_cache($cycleAId);
@@ -162,16 +171,17 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
             ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
             ->and(esctt_page_is_descendant($cycleAId, 999999))->toBeFalse()
+            ->and(esctt_can_save_redirect($revisionId))->toBeFalse()
             ->and($metaBox)->toContain('esctt-redirect-source')
             ->and($metaBox)->toContain('esctt-redirect-target');
 
         esctt_upsert_page_redirect('', $targetId);
         esctt_upsert_page_redirect('/invalid-target/', 0);
         esctt_upsert_page_redirect(esctt_page_path($targetId), $targetId);
-        $forceInsertError = static fn() => new WP_Error('forced_redirect_insert_failure');
-        add_filter('pre_wp_insert_post', $forceInsertError);
+        $forceInsertError = '__return_true';
+        add_filter('wp_insert_post_empty_content', $forceInsertError);
         esctt_upsert_page_redirect('/forced-insert-error', $targetId);
-        remove_filter('pre_wp_insert_post', $forceInsertError);
+        remove_filter('wp_insert_post_empty_content', $forceInsertError);
 
         update_post_meta($draftId, ESCTT_REDIRECT_SOURCE_META, '/draft-source');
         update_post_meta($draftId, ESCTT_REDIRECT_TARGET_META, $targetId);
@@ -228,6 +238,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         wp_delete_post($descendantId, true);
         wp_delete_post($cycleAId, true);
         wp_delete_post($cycleBId, true);
+        wp_delete_post($revisionId, true);
         legacy_urls_restore_permalinks($previousPermalinkStructure);
     }
 })->skip(
