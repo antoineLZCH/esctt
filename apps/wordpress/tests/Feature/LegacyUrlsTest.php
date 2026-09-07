@@ -79,20 +79,33 @@ test('a published page slug change records its old hierarchical URL', function (
 test('the verified legacy inventory registers only current destinations', function () {
     legacy_urls_load_wordpress();
 
-    expect(esctt_inventoried_redirects())->toBe([
-        '/accueil/' => 'front',
-        '/politique-de-confidentialite/' => 'confidentialite',
-    ]);
+    $privacyPageId = legacy_urls_page('Privacy page', 'confidentialite');
+    $privacyRedirect = null;
 
-    esctt_register_inventoried_redirects();
-    $frontPageId = (int) get_option('page_on_front');
-    $redirect = esctt_find_legacy_redirect('/accueil/');
-
-    expect($frontPageId)->toBeGreaterThan(0)
-        ->and($redirect)->toMatchArray([
-            'target_id' => $frontPageId,
-            'url' => (string) get_permalink($frontPageId),
+    try {
+        expect(esctt_inventoried_redirects())->toBe([
+            '/accueil/' => 'front',
+            '/politique-de-confidentialite/' => 'confidentialite',
         ]);
+
+        esctt_register_inventoried_redirects();
+        $frontPageId = (int) get_option('page_on_front');
+        $frontRedirect = esctt_find_legacy_redirect('/accueil/');
+        $privacyRedirect = esctt_find_legacy_redirect('/politique-de-confidentialite/');
+
+        expect($frontPageId)->toBeGreaterThan(0)
+            ->and($frontRedirect)->toMatchArray([
+                'target_id' => $frontPageId,
+                'url' => (string) get_permalink($frontPageId),
+            ])
+            ->and($privacyRedirect)->toMatchArray([
+                'target_id' => $privacyPageId,
+                'url' => (string) get_permalink($privacyPageId),
+            ]);
+    } finally {
+        wp_delete_post((int) ($privacyRedirect['post_id'] ?? 0), true);
+        wp_delete_post($privacyPageId, true);
+    }
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
@@ -193,9 +206,11 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
             ->and(esctt_redirect_target_is_valid(0))->toBeFalse()
             ->and(esctt_redirect_target_is_valid($redirectId))->toBeFalse()
             ->and(esctt_find_legacy_redirect(''))->toBeNull()
+            ->and(esctt_find_legacy_redirect('http://'))->toBeNull()
             ->and(esctt_page_is_descendant($descendantId, $ancestorId))->toBeTrue()
             ->and(esctt_page_is_descendant($cycleAId, 999999))->toBeFalse()
             ->and(esctt_redirect_would_loop('', 0))->toBeFalse()
+            ->and(esctt_redirect_would_loop('/unrelated-source', $redirectId))->toBeFalse()
             ->and(esctt_redirect_would_loop('/unrelated-source', $targetId))->toBeFalse()
             ->and(esctt_redirect_would_loop($loopAPath, $loopBId))->toBeTrue()
             ->and(esctt_redirect_would_loop('/unrelated-source', $loopAId))->toBeTrue()
@@ -294,6 +309,7 @@ test('the redirect registry covers invalid paths, admin fields and redirect edge
         update_post_meta($redirectId, ESCTT_REDIRECT_SOURCE_META, esctt_page_path($targetId));
         update_post_meta($redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
         expect(esctt_find_legacy_redirect(esctt_page_path($targetId)))->toBeNull()
+            ->and(esctt_redirect_location('/new/', 'http://'))->toBe('/new/')
             ->and(esctt_redirect_location('/new/?existing=1#fragment', '/old/?utm_source=legacy'))->toBe('/new/?existing=1&utm_source=legacy#fragment');
     } finally {
         $_POST = $originalPost;

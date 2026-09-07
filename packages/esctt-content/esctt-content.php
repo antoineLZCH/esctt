@@ -1968,10 +1968,10 @@ function esctt_redirect_would_loop(string $sourcePath, int $targetId): bool
     $visited = [];
     $currentTargetId = $targetId;
 
-    while (true) {
+    while ($currentTargetId > 0) {
         $currentPath = esctt_page_path($currentTargetId);
         if ($currentPath === '') {
-            return false;
+            break;
         }
 
         if ($currentPath === $sourcePath || isset($visited[$currentPath])) {
@@ -1986,6 +1986,8 @@ function esctt_redirect_would_loop(string $sourcePath, int $targetId): bool
 
         $currentTargetId = $redirect['target_id'];
     }
+
+    return false;
 }
 
 function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
@@ -2097,12 +2099,12 @@ function esctt_redirect_location(string $targetUrl, string $requestUri): string
     return $targetUrl . (str_contains($targetUrl, '?') ? '&' : '?') . $query . $fragment;
 }
 
+// @codeCoverageIgnoreStart
 /**
  * Redirect only front-end GET/HEAD requests and preserve their query string.
  */
 function esctt_redirect_legacy_url(): void
 {
-    // @codeCoverageIgnoreStart
     if (is_admin() || wp_doing_ajax() || wp_doing_cron() || (defined('REST_REQUEST') && REST_REQUEST)) {
         return;
     }
@@ -2123,8 +2125,8 @@ function esctt_redirect_legacy_url(): void
     if (wp_safe_redirect($location, 301, 'ESCTT Content')) {
         exit;
     }
-    // @codeCoverageIgnoreEnd
 }
+// @codeCoverageIgnoreEnd
 
 if (function_exists('add_filter')) {
     add_filter('register_post_type_args', static function (array $args, string $postType): array {
