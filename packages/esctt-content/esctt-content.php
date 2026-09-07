@@ -1242,7 +1242,7 @@ function esctt_render_practice_schedules_block(): string
             $gridColumn = $slotLanes[$day][$slotIndex] ?? 1;
             $slotStyle = sprintf('grid-row: %d / span %d; grid-column: %d;', $gridRow, $gridSpan, $gridColumn);
 
-            $output .= '<li class="esctt-practice-slot" data-profile-slugs="' . esc_attr(implode(' ', $profileSlugs)) . '" style="' . esc_attr($slotStyle) . '">';
+            $output .= '<li class="esctt-practice-slot" tabindex="0" data-profile-slugs="' . esc_attr(implode(' ', $profileSlugs)) . '" style="' . esc_attr($slotStyle) . '">';
             $output .= '<span class="esctt-practice-slot__time"><time datetime="' . esc_attr($slot['start']) . '">' . esc_html($slot['start']) . '</time> – <time datetime="' . esc_attr($slot['end']) . '">' . esc_html($slot['end']) . '</time></span>';
             $output .= '<strong>' . esc_html($slot['title']) . '</strong>';
             $output .= '<span class="esctt-practice-profiles">' . esc_html($slotProfiles) . '</span>';
