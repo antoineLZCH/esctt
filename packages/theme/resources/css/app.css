@@ -416,3 +416,70 @@ p {
     text-align: start;
   }
 }
+
+.esctt-sport-life .screen-reader-text {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.esctt-sport-life {
+  display: grid;
+  gap: 2rem;
+  max-width: 72rem;
+  padding-block: 3rem;
+}
+
+.esctt-sport-life__intro {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.esctt-sport-life__tournament,
+.esctt-sport-life__competitions {
+  border: 1px solid currentColor;
+  padding: 1.5rem;
+}
+
+.esctt-sport-life__tournament {
+  border-width: 0.25rem;
+}
+
+.esctt-sport-life__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.esctt-sport-life__photos {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.esctt-sport-life__photos img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.esctt-sport-life__jersey {
+  margin: 0;
+}
+
+.esctt-sport-life__jersey figcaption {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 48rem) {
+  .esctt-sport-life__intro,
+  .esctt-sport-life__photos {
+    grid-template-columns: 1fr;
+  }
+}

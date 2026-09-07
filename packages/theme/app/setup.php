@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/sport-life',
     'esctt/practice-schedules',
     'core/paragraph',
     'core/heading',
@@ -34,6 +35,17 @@ function page_block_catalog(): array
     $catalog = apply_filters('esctt_page_block_catalog', PAGE_BLOCK_CATALOG);
 
     return $catalog;
+}
+
+function render_sport_life(array $attributes): string
+{
+    $helloAssoUrl = esc_url_raw((string) array_merge(['helloAssoUrl' => ''], $attributes)['helloAssoUrl']);
+
+    return view('sections.sport-life', [
+        'helloAssoUrl' => $helloAssoUrl,
+        'frontImage' => Vite::asset('resources/images/maillot-face.jpg'),
+        'backImage' => Vite::asset('resources/images/maillot-dos.jpg'),
+    ])->render();
 }
 
 /**
@@ -195,6 +207,10 @@ function page_structure_error(string $content): ?WP_Error
         foreach ($nestedBlocks as $block) {
             $name = $block['blockName'] ?? null;
 
+            if (null === $name && '' === trim((string) ($block['innerHTML'] ?? ''))) {
+                continue;
+            }
+
             if (! in_array($name, $allowedBlocks, true)) {
                 return new WP_Error(
                     'esctt_block_not_allowed',
@@ -311,14 +327,30 @@ add_action('init', function (): void {
             'reusable' => false,
         ],
     ]);
+
+    register_block_type('esctt/sport-life', [
+        'api_version' => '3',
+        'attributes' => [
+            'helloAssoUrl' => [
+                'type' => 'string',
+                'default' => '',
+            ],
+        ],
+        'render_callback' => __NAMESPACE__ . '\\render_sport_life',
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
 });
 
 add_filter('rest_pre_insert_page', function (object $post) {
-    if (! in_array($post->post_status, ['publish', 'future'], true)) {
+    if (! in_array($post->post_status ?? '', ['publish', 'future'], true)) {
         return $post;
     }
 
-    return page_structure_error((string) $post->post_content) ?? $post;
+    return page_structure_error((string) ($post->post_content ?? '')) ?? $post;
 });
 
 add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $postarr): bool {
@@ -326,7 +358,11 @@ add_filter('wp_insert_post_empty_content', function (bool $maybeEmpty, array $po
         return $maybeEmpty;
     }
 
-    if (! in_array($postarr['post_status'] ?? '', ['publish', 'future'], true)) {
+    if (! array_key_exists('post_status', $postarr)) {
+        return false;
+    }
+
+    if (! in_array($postarr['post_status'], ['publish', 'future'], true)) {
         return $maybeEmpty;
     }
 

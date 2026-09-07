@@ -25,10 +25,15 @@ test('theme JavaScript entries parse and the application entry loads', async () 
             },
             blockEditor: {
                 BlockControls: 'BlockControls',
+                InspectorControls: 'InspectorControls',
                 RichText: 'RichText',
                 useBlockProps: (props) => props,
             },
-            components: { ToolbarButton: 'ToolbarButton' },
+            components: {
+                PanelBody: 'PanelBody',
+                TextControl: 'TextControl',
+                ToolbarButton: 'ToolbarButton',
+            },
             element: {
                 Fragment: 'Fragment',
                 createElement: (type, props, ...children) => ({ type, props, children }),
@@ -67,6 +72,21 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.equal(regular.children[1].props.className, 'esctt-hero');
     assert.equal(compact.children[1].props.className, 'esctt-hero esctt-hero--compact');
     assert.deepEqual(changes, [{ compact: true }, { title: 'Nouveau titre' }]);
+
+    const sportLife = registeredBlocks.get('esctt/sport-life');
+    assert.ok(sportLife);
+    assert.equal(sportLife.save(), null);
+    const sportChanges = [];
+    const sportEditor = sportLife.edit({
+        attributes: { helloAssoUrl: '' },
+        setAttributes: (value) => sportChanges.push(value),
+    });
+    const sportUrlControl = sportEditor.children[0].children[0].children[0];
+    sportUrlControl.props.onChange('https://www.helloasso.com/associations/example/adhesions/tournoi');
+
+    assert.equal(sportEditor.children[1].props.className, 'esctt-sport-life esctt-sport-life--editor');
+    assert.equal(sportUrlControl.props.type, 'url');
+    assert.deepEqual(sportChanges, [{ helloAssoUrl: 'https://www.helloasso.com/associations/example/adhesions/tournoi' }]);
 
     delete globalThis.document;
     delete globalThis.window;

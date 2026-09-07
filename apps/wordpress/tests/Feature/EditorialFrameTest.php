@@ -80,6 +80,7 @@ test('published page content is validated at the REST and database seams', funct
     editorial_frame_load_wordpress();
 
     $valid = editorial_frame_hero(['compact' => true])
+        . "\n"
         . editorial_frame_block('core/group', editorial_frame_block('core/heading', '<h2>Horaires</h2>', ['level' => 2]));
     $invalidHero = editorial_frame_block('core/paragraph', '<p>Avant le hero</p>') . editorial_frame_hero();
     $unlockedHero = editorial_frame_hero(['lock' => ['move' => true, 'remove' => false]]);
@@ -94,6 +95,9 @@ test('published page content is validated at the REST and database seams', funct
         'post_status' => 'publish',
         'post_content' => $valid,
     ]))->toBeObject()
+        ->and(apply_filters('rest_pre_insert_page', (object) [
+            'post_content' => $valid,
+        ]))->toBeObject()
         ->and(apply_filters('rest_pre_insert_page', (object) [
             'post_status' => 'draft',
             'post_content' => $invalidHero,
@@ -152,6 +156,9 @@ test('published page content is validated at the REST and database seams', funct
         'post_status' => 'publish',
         'post_content' => $valid,
     ]);
+    $partialContent = apply_filters('wp_insert_post_empty_content', true, [
+        'post_type' => 'page',
+    ]);
 
     require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
     require_once ABSPATH . 'wp-admin/includes/screen.php';
@@ -167,7 +174,8 @@ test('published page content is validated at the REST and database seams', funct
         ->and($validContent)->toBeFalse()
         ->and($draftContent)->toBeFalse()
         ->and($postContent)->toBeFalse()
-        ->and($alreadyEmpty)->toBeTrue();
+        ->and($alreadyEmpty)->toBeTrue()
+        ->and($partialContent)->toBeFalse();
 
     $postId = wp_insert_post([
         'post_type' => 'page',
