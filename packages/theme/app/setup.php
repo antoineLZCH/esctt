@@ -44,59 +44,15 @@ function sport_life_helloasso_url(string $url): ?string
     return [null, $url][(int) preg_match($pattern, $url)];
 }
 
-function render_sport_life_cta(string $url): string
-{
-    return sprintf(
-        '<p class="esctt-sport-life__cta"><a class="wp-element-button" href="%s" target="_blank" rel="noopener noreferrer">%s <span class="screen-reader-text">%s</span></a></p>',
-        esc_url($url),
-        esc_html__('S’inscrire au tournoi des familles sur HelloAsso', 'esctt'),
-        esc_html__('(ouvre dans une nouvelle fenêtre)', 'esctt'),
-    );
-}
-
 function render_sport_life(array $attributes): string
 {
     $helloAssoUrl = sport_life_helloasso_url((string) array_merge(['helloAssoUrl' => ''], $attributes)['helloAssoUrl']);
-    $cta = implode('', array_map(__NAMESPACE__ . '\\render_sport_life_cta', array_filter([$helloAssoUrl])));
 
-    return sprintf(
-        '<section class="esctt-sport-life" aria-labelledby="esctt-sport-life-title">
-            <div class="esctt-sport-life__intro">
-                <article class="esctt-sport-life__tournament">
-                    <p class="esctt-sport-life__eyebrow">%s</p>
-                    <h2 id="esctt-sport-life-title">%s</h2>
-                    <p>%s</p>
-                    <p>%s</p>
-                    %s
-                </article>
-                <article class="esctt-sport-life__competitions" aria-labelledby="esctt-sport-life-competitions-title">
-                    <p class="esctt-sport-life__eyebrow">%s</p>
-                    <h2 id="esctt-sport-life-competitions-title">%s</h2>
-                    <p>%s</p>
-                </article>
-            </div>
-            <figure class="esctt-sport-life__jersey">
-                <div class="esctt-sport-life__photos">
-                    <img src="%s" alt="%s" width="900" height="1600" loading="lazy">
-                    <img src="%s" alt="%s" width="900" height="1600" loading="lazy">
-                </div>
-                <figcaption>%s</figcaption>
-            </figure>
-        </section>',
-        esc_html__('Tournoi interne', 'esctt'),
-        esc_html__('Tournoi des familles', 'esctt'),
-        esc_html__('Le tournoi des familles est le temps fort des tournois internes du club.', 'esctt'),
-        esc_html__('Un rendez-vous pour partager le tennis de table en famille et entre membres.', 'esctt'),
-        $cta,
-        esc_html__('Pratique sportive', 'esctt'),
-        esc_html__('Compétitions FFTT', 'esctt'),
-        esc_html__('La compétition FFTT complète la vie du club. Cette présentation reste volontairement concise, sans résultats ni calendrier détaillé.', 'esctt'),
-        esc_url(Vite::asset('resources/images/maillot-face.jpg')),
-        esc_attr__('Photo du maillot de l’ES Colombienne vu de face', 'esctt'),
-        esc_url(Vite::asset('resources/images/maillot-dos.jpg')),
-        esc_attr__('Photo du maillot de l’ES Colombienne vu de dos', 'esctt'),
-        esc_html__('Maillot actuel du club, photographié de face et de dos.', 'esctt'),
-    );
+    return view('sections.sport-life', [
+        'helloAssoUrl' => $helloAssoUrl,
+        'frontImage' => Vite::asset('resources/images/maillot-face.jpg'),
+        'backImage' => Vite::asset('resources/images/maillot-dos.jpg'),
+    ])->render();
 }
 
 function page_structure_error(string $content): ?WP_Error
