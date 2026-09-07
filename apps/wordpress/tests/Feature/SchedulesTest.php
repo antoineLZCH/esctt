@@ -123,6 +123,7 @@ test('admins can edit and inspect location and slot fields', function () {
             'esctt_location_address' => '5 rue du Test, Colombes',
         ];
         esctt_save_location($locationId);
+        require_once ABSPATH . 'wp-admin/includes/template.php';
         esctt_register_content_meta_boxes();
         $_POST = [
             'esctt_practice_slot_nonce' => wp_create_nonce('esctt_save_practice_slot'),
