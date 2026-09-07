@@ -263,15 +263,6 @@ test('an empty published partner entry does not create an empty public section',
 test('a single published partner renders without list-shape assumptions', function () {
     partners_load_wordpress();
 
-    expect(\App\render_partner_item(new WP_Post((object) [
-        'ID' => 0,
-        'post_title' => '   ',
-    ])))->toBeNull()
-        ->and(\App\render_partner_item(new WP_Post((object) [
-            'ID' => 0,
-            'post_title' => '0',
-        ])))->toContain('<li>0</li>');
-
     $publishedPartners = esctt_get_published_partners();
     $originalOrders = [];
     $singlePartner = wp_insert_post([

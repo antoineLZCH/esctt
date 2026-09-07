@@ -37,50 +37,11 @@ function page_block_catalog(): array
     return $catalog;
 }
 
-function render_partner_item(WP_Post $partner): ?string
-{
-    $name = trim((string) $partner->post_title);
-
-    if ($name === '') {
-        return null;
-    }
-
-    $url = esctt_sanitize_partner_url((string) get_post_meta($partner->ID, ESCTT_PARTNER_URL_META, true));
-    $label = esc_html($name);
-
-    if ($url !== '') {
-        $label = sprintf(
-            '<a href="%s" target="_blank" rel="noopener noreferrer">%s<span class="screen-reader-text"> (%s)</span></a>',
-            esc_url($url),
-            $label,
-            esc_html__('ouvre dans une nouvelle fenêtre', 'esctt'),
-        );
-    }
-
-    return sprintf('<li>%s</li>', $label);
-}
-
 function render_partners(array $attributes = []): string
 {
-    $items = [];
-
-    foreach (esctt_get_published_partners() as $partner) {
-        $item = render_partner_item($partner);
-
-        if ($item !== null) {
-            $items[] = $item;
-        }
-    }
-
-    if ($items === []) {
-        return '';
-    }
-
-    return sprintf(
-        '<section class="esctt-partners" aria-labelledby="esctt-partners-title"><h2 id="esctt-partners-title">%s</h2><ul>%s</ul></section>',
-        esc_html__('Partenaires', 'esctt'),
-        implode('', $items),
-    );
+    return view('sections.partners', [
+        'partners' => esctt_get_published_partners(),
+    ])->render();
 }
 
 function page_structure_error(string $content): ?WP_Error
