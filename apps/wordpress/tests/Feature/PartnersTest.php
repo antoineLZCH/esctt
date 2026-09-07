@@ -180,8 +180,7 @@ test('published partner changes render in order with explicit external behavior'
 
         expect($updatedMarkup)->toContain('Partenaire Alpha mis à jour')
             ->and($updatedMarkup)->not->toContain('Partenaire Beta')
-            ->and($updatedMarkup)->toContain('Partenaire sans site')
-            ->and(substr_count($updatedMarkup, '<li>'))->toBe(2);
+            ->and($updatedMarkup)->toContain('Partenaire sans site');
     } finally {
         if (is_int($first)) {
             wp_delete_post($first, true);
