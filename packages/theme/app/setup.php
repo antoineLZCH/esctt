@@ -59,7 +59,7 @@ function render_sport_life(array $attributes): string
 
 function helloasso_membership_url(string $url): ?string
 {
-    $url = esc_url_raw(trim($url));
+    $url = esc_url_raw(\trim($url));
     $parts = wp_parse_url($url);
 
     if (! is_array($parts)) {
@@ -74,11 +74,11 @@ function helloasso_membership_url(string $url): ?string
         return null;
     }
 
-    if (! in_array($host, ['helloasso.com', 'www.helloasso.com'], true)) {
+    if (! \in_array($host, ['helloasso.com', 'www.helloasso.com'], true)) {
         return null;
     }
 
-    if (! preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/?$~i', $path)) {
+    if (! \preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/?$~i', $path)) {
         return null;
     }
 
@@ -100,7 +100,7 @@ function helloasso_widget_url(string $url): ?string
         strtolower((string) $parts['host']),
         isset($parts['port']) ? ':' . (int) $parts['port'] : '',
     );
-    $path = '/' . trim((string) $parts['path'], '/') . '/widget';
+    $path = '/' . \trim((string) $parts['path'], '/') . '/widget';
     $query = isset($parts['query']) ? '?' . (string) $parts['query'] : '';
 
     return esc_url_raw($origin . $path . $query);
