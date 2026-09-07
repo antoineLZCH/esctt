@@ -1669,7 +1669,7 @@ function esctt_redirect_path_from_url(string $url): string
 }
 
 /**
- * Return a page's hierarchical path without relying on its current URL.
+ * Return the page path from WordPress's generated permalink.
  */
 function esctt_page_path(WP_Post|int $page): string
 {
@@ -1679,25 +1679,7 @@ function esctt_page_path(WP_Post|int $page): string
         return '';
     }
 
-    $segments = [];
-    $seen = [];
-
-    while ($page instanceof WP_Post) {
-        if (isset($seen[$page->ID])) {
-            return '';
-        }
-
-        $seen[$page->ID] = true;
-        array_unshift($segments, rawurldecode($page->post_name));
-
-        if ($page->post_parent === 0) {
-            break;
-        }
-
-        $page = get_post($page->post_parent);
-    }
-
-    return esctt_redirect_source_path('/' . implode('/', $segments) . '/');
+    return esctt_redirect_path_from_url((string) get_permalink($page));
 }
 
 function esctt_redirect_target_is_valid(int $targetId): bool
@@ -1997,6 +1979,7 @@ function esctt_upsert_page_redirect(string $sourcePath, int $targetId): void
         }
 
         update_post_meta((int) $redirectId, ESCTT_REDIRECT_TARGET_META, $targetId);
+        update_post_meta((int) $redirectId, ESCTT_REDIRECT_SOURCE_META, $sourcePath);
     }
 }
 
