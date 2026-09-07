@@ -46,6 +46,11 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.ok(hero);
     assert.equal(hero.save(), null);
 
+    const partners = registeredBlocks.get('esctt/partners');
+    assert.ok(partners);
+    assert.equal(partners.save(), null);
+    assert.equal(partners.edit({}).props.className, 'esctt-partners');
+
     const changes = [];
     const regular = hero.edit({
         attributes: { compact: false, title: 'Club' },

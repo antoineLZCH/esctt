@@ -10,3 +10,25 @@
 .esctt-hero--compact {
   padding-block: 1.5rem;
 }
+
+.esctt-partners {
+  padding: 3rem 1.5rem;
+}
+
+.esctt-partners ul {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.esctt-partners .screen-reader-text {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

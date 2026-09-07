@@ -12,6 +12,7 @@ use WP_Error;
 
 const PAGE_BLOCK_CATALOG = [
     'esctt/hero',
+    'esctt/partners',
     'core/paragraph',
     'core/heading',
     'core/image',
@@ -33,6 +34,43 @@ function page_block_catalog(): array
     $catalog = apply_filters('esctt_page_block_catalog', PAGE_BLOCK_CATALOG);
 
     return $catalog;
+}
+
+function render_partners(array $attributes = []): string
+{
+    $items = [];
+
+    foreach (esctt_get_published_partners() as $partner) {
+        $name = trim(get_the_title($partner));
+
+        if ($name === '') {
+            continue;
+        }
+
+        $url = esctt_sanitize_partner_url((string) get_post_meta($partner->ID, ESCTT_PARTNER_URL_META, true));
+        $label = esc_html($name);
+
+        if ($url !== '') {
+            $label = sprintf(
+                '<a href="%s" target="_blank" rel="noopener noreferrer">%s<span class="screen-reader-text"> (%s)</span></a>',
+                esc_url($url),
+                $label,
+                esc_html__('ouvre dans une nouvelle fenêtre', 'esctt'),
+            );
+        }
+
+        $items[] = sprintf('<li>%s</li>', $label);
+    }
+
+    if ($items === []) {
+        return '';
+    }
+
+    return sprintf(
+        '<section class="esctt-partners" aria-labelledby="esctt-partners-title"><h2 id="esctt-partners-title">%s</h2><ul>%s</ul></section>',
+        esc_html__('Partenaires', 'esctt'),
+        implode('', $items),
+    );
 }
 
 function page_structure_error(string $content): ?WP_Error
@@ -174,6 +212,16 @@ add_action('init', function (): void {
                 ]),
             );
         },
+        'supports' => [
+            'html' => false,
+            'multiple' => false,
+            'reusable' => false,
+        ],
+    ]);
+
+    register_block_type('esctt/partners', [
+        'api_version' => '3',
+        'render_callback' => __NAMESPACE__ . '\\render_partners',
         'supports' => [
             'html' => false,
             'multiple' => false,

@@ -59,4 +59,24 @@ domReady(() => {
     },
     save: () => null,
   });
+
+  blocks.registerBlockType('esctt/partners', {
+    apiVersion: 3,
+    title: __('Partners', 'esctt'),
+    description: __('Displays the partners published by the club.', 'esctt'),
+    icon: 'groups',
+    category: 'design',
+    supports: {
+      html: false,
+      multiple: false,
+      reusable: false,
+    },
+    edit: () => createElement(
+      'section',
+      useBlockProps({ className: 'esctt-partners' }),
+      createElement('h2', null, __('Partners', 'esctt')),
+      createElement('p', null, __('Published partners appear here.', 'esctt')),
+    ),
+    save: () => null,
+  });
 });
