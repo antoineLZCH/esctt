@@ -166,62 +166,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-  theme:
-    name: Theme gate
-    needs: changes
-    if: >-
-      needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.theme == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.12.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm test:js
-      - run: pnpm theme:build
-
-  plugin:
-    name: Plugin gate
-    needs: changes
-    if: >-
-      needs.changes.outputs.relevant == 'true' &&
-      (needs.changes.outputs.shared == 'true' || needs.changes.outputs.plugin == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          extensions: mbstring, intl, mysqli, zip
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.12.0
-          cache: pnpm
-      - uses: actions/cache@v4
-        with:
-          path: apps/wordpress/vendor
-          key: composer-v1-${{ runner.os }}-php-8.4-${{ hashFiles('apps/wordpress/composer.lock') }}
-          restore-keys: |
-            composer-v1-${{ runner.os }}-php-8.4-
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm --filter @esctt/wordpress composer:install
-      - run: pnpm --filter @esctt/esctt-content check
-
   public:
     name: Public browser gates
     needs: changes
@@ -321,6 +265,10 @@ jobs:
       - run: pnpm --filter @esctt/wordpress composer:install
       - run: pnpm check:scaffold
       - run: pnpm check:php
+      - run: pnpm test:js
+        if: >-
+          needs.changes.outputs.shared == 'true' ||
+          needs.changes.outputs.theme == 'true'
       - run: pnpm check:static
 
   security:
@@ -385,7 +333,7 @@ jobs:
   quality:
     name: Quality result
     if: always()
-    needs: [changes, php, theme, plugin, public, static, security]
+    needs: [changes, php, public, static, security]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
