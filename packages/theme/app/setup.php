@@ -103,15 +103,14 @@ function helloasso_widget_url(string $url): ?string
 function render_helloasso(array $attributes): string
 {
     $helloAssoUrl = helloasso_membership_url((string) ($attributes['helloAssoUrl'] ?? ''));
-    $widgetUrl = $helloAssoUrl === null ? null : helloasso_widget_url($helloAssoUrl);
 
-    if ($helloAssoUrl === null || $widgetUrl === null) {
+    if ($helloAssoUrl === null) {
         return '';
     }
 
     return view('sections.helloasso', [
         'helloAssoUrl' => $helloAssoUrl,
-        'widgetUrl' => $widgetUrl,
+        'widgetUrl' => helloasso_widget_url($helloAssoUrl),
     ])->render();
 }
 
