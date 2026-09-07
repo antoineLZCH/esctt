@@ -100,6 +100,7 @@ test('native page operations cover drafts, previews, publication, navigation and
     };
     $originalContent = editorial_frame_hero(['title' => 'Page éditoriale']);
     $revisedContent = editorial_frame_hero(['title' => 'Version publiée']);
+    $secondRevisionContent = editorial_frame_hero(['title' => 'Deuxième modification']);
     $slug = 'page-editoriale-' . strtolower(wp_generate_password(8, false, false));
 
     try {
@@ -157,15 +158,19 @@ test('native page operations cover drafts, previews, publication, navigation and
 
         $revisionId = 0;
         foreach (wp_get_post_revisions($pageId) as $revision) {
-            if ($revision->post_content === $originalContent) {
+            if ($revision->post_content === $revisedContent) {
                 $revisionId = (int) $revision->ID;
                 break;
             }
         }
 
         expect($revisionId)->toBeGreaterThan(0)
+            ->and(wp_update_post([
+                'ID' => $pageId,
+                'post_content' => $secondRevisionContent,
+            ], true))->toBe($pageId)
             ->and(wp_restore_post_revision($revisionId))->toBe($pageId)
-            ->and(get_post_field('post_content', $pageId))->toBe($originalContent);
+            ->and(get_post_field('post_content', $pageId))->toBe($revisedContent);
     } finally {
         remove_action('esctt_technical_deploy', $deploymentHook);
         wp_set_current_user($originalUserId);
