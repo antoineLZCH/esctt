@@ -11,7 +11,7 @@ function registration_test_save_document(int $postId, string $url, string $seaso
     $_POST['esctt_registration_document_nonce'] = wp_create_nonce('esctt_registration_document');
     $_POST['esctt_registration_document_url'] = $url;
     $_POST['esctt_registration_document_season'] = $season;
-    do_action('save_post_esctt_reg_document', $postId, get_post($postId), false);
+    esctt_save_registration_document($postId, get_post($postId));
     unset(
         $_POST['esctt_registration_document_nonce'],
         $_POST['esctt_registration_document_url'],
@@ -22,7 +22,7 @@ function registration_test_save_document(int $postId, string $url, string $seaso
 function registration_test_trigger_save(int $postId, array $fields): void
 {
     $_POST = array_merge($_POST, $fields);
-    do_action('save_post_esctt_reg_document', $postId, get_post($postId), false);
+    esctt_save_registration_document($postId, get_post($postId));
     unset(
         $_POST['esctt_registration_document_nonce'],
         $_POST['esctt_registration_document_url'],
@@ -40,7 +40,8 @@ test('registration documents have an admin-managed model and a non-collection po
     expect($postType)->not->toBeNull()
         ->and($postType->show_ui)->toBeTrue()
         ->and($postType->public)->toBeFalse()
-        ->and($postType->supports)->toContain('title', 'page-attributes')
+        ->and(post_type_supports('esctt_reg_document', 'title'))->toBeTrue()
+        ->and(post_type_supports('esctt_reg_document', 'page-attributes'))->toBeTrue()
         ->and($meta)->toContain('_esctt_registration_document_url', '_esctt_registration_document_season')
         ->and(esctt_membership_documents_policy())->toContain('ne collecte ni ne stocke');
 
