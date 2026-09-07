@@ -108,10 +108,9 @@ if ((${#privacy_ids[@]} == 0)); then
     privacy_id=$("${wp[@]}" post create \
         --post_type=page \
         --post_status=publish \
-        --post_title=Privacy \
+        --post_title='Confidentialité' \
         --post_name=confidentialite \
-        --post_content=Privacy \
-        --post_excerpt=Privacy \
+        --post_content='<!-- wp:esctt/hero {"title":"Confidentialité","lock":{"move":true,"remove":true}} /-->' \
         --porcelain)
 else
     privacy_id="${privacy_ids[0]}"
