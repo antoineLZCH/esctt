@@ -85,11 +85,9 @@ class Registration extends Composer
     public function editorContent(): string
     {
         $blocks = parse_blocks((string) get_the_content());
-        array_shift($blocks);
-
         return implode('', array_map(
             static fn (array $block): string => render_block($block),
-            $blocks,
+            array_slice($blocks, 1),
         ));
     }
 
