@@ -35,6 +35,39 @@ function page_block_catalog(): array
     return $catalog;
 }
 
+/**
+ * Read the single Admin-maintained FAQ source.
+ *
+ * @return array<int, array{question: string, answer: string}>
+ */
+function faq_items(): array
+{
+    if (! function_exists('esctt_faq_items')) {
+        return [];
+    }
+
+    return \esctt_faq_items();
+}
+
+/**
+ * Render a FAQ view from the same source used by every placement.
+ */
+function faq_markup(?int $limit = null, string $context = 'faq'): string
+{
+    $sourceItems = faq_items();
+    $items = $sourceItems;
+
+    if ($limit !== null) {
+        $items = array_slice($items, 0, max(0, $limit));
+    }
+
+    return view('partials.faq', [
+        'context' => sanitize_key($context) ?: 'faq',
+        'items' => $items,
+        'showLink' => $limit !== null && count($items) < count($sourceItems),
+    ])->render();
+}
+
 function page_structure_error(string $content): ?WP_Error
 {
     $blocks = parse_blocks($content);
