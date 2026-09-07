@@ -1854,34 +1854,32 @@ function esctt_page_is_descendant(int $pageId, int $ancestorId): bool
     return false;
 }
 
-function esctt_page_path_before_update(WP_Post $page, WP_Post $postBefore): string
+/**
+ * Snapshot published descendants before a page update changes their path.
+ */
+function esctt_capture_page_redirects(int $postId, array $postData): void
 {
-    $segments = [];
-    $seen = [];
+    $post = get_post($postId);
 
-    while ($page instanceof WP_Post) {
-        if (isset($seen[$page->ID])) {
-            return '';
-        }
-
-        $seen[$page->ID] = true;
-        if ($page->ID === $postBefore->ID) {
-            $page = $postBefore;
-        }
-
-        if ($page->post_name === '') {
-            return '';
-        }
-
-        array_unshift($segments, rawurldecode($page->post_name));
-        if ($page->post_parent === 0) {
-            break;
-        }
-
-        $page = get_post($page->post_parent);
+    if (! $post instanceof WP_Post || $post->post_type !== 'page' || $post->post_status !== 'publish') {
+        return;
     }
 
-    return esctt_redirect_source_path('/' . implode('/', $segments) . '/');
+    $snapshot = [];
+    foreach (get_posts([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+    ]) as $candidate) {
+        if ($candidate->ID === $postId || esctt_page_is_descendant($candidate->ID, $postId)) {
+            $path = esctt_page_path($candidate);
+            if ($path !== '') {
+                $snapshot[$candidate->ID] = $path;
+            }
+        }
+    }
+
+    $GLOBALS['esctt_page_redirect_snapshot'][$postId] = $snapshot;
 }
 
 /**
@@ -1889,30 +1887,36 @@ function esctt_page_path_before_update(WP_Post $page, WP_Post $postBefore): stri
  */
 function esctt_store_page_redirects(int $postId, WP_Post $postAfter, WP_Post $postBefore): void
 {
-    if ($postAfter->post_type !== 'page'
-        || $postAfter->post_status !== 'publish'
-        || $postBefore->post_type !== 'page'
-        || $postBefore->post_status !== 'publish') {
+    $snapshot = $GLOBALS['esctt_page_redirect_snapshot'][$postId] ?? [];
+    unset($GLOBALS['esctt_page_redirect_snapshot'][$postId]);
+
+    if ($snapshot === [] || $postAfter->post_type !== 'page' || $postAfter->post_status !== 'publish') {
         return;
     }
 
-    foreach (get_posts([
-        'post_type' => 'page',
-        'post_status' => 'publish',
-        'posts_per_page' => -1,
-    ]) as $candidate) {
-        if ($candidate->ID !== $postId && ! esctt_page_is_descendant($candidate->ID, $postId)) {
+    foreach ($snapshot as $pageId => $oldPath) {
+        $page = get_post((int) $pageId);
+        $newPath = $page instanceof WP_Post ? esctt_page_path($page) : '';
+
+        if (! $page instanceof WP_Post || $page->post_status !== 'publish' || $newPath === '' || $oldPath === $newPath) {
             continue;
         }
 
-        $oldPath = esctt_page_path_before_update($candidate, $postBefore);
-        $newPath = esctt_page_path($candidate);
-        if ($oldPath === '' || $newPath === '' || $oldPath === $newPath) {
-            continue;
-        }
-
-        esctt_upsert_page_redirect($oldPath, $candidate->ID);
+        esctt_upsert_page_redirect($oldPath, $page->ID);
     }
+}
+
+function esctt_store_page_redirects_after_insert(
+    int $postId,
+    WP_Post $postAfter,
+    bool $update,
+    ?WP_Post $postBefore,
+): void {
+    if (! $update || ! $postBefore instanceof WP_Post) {
+        return;
+    }
+
+    esctt_store_page_redirects($postId, $postAfter, $postBefore);
 }
 
 /**
@@ -2095,7 +2099,8 @@ if (function_exists('add_action')) {
     add_action('init', 'esctt_register_redirect_model', 5);
     add_action('add_meta_boxes_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_register_redirect_meta_box');
     add_action('save_post_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_save_redirect');
-    add_action('post_updated', 'esctt_store_page_redirects', 10, 3);
+    add_action('pre_post_update', 'esctt_capture_page_redirects', 10, 2);
+    add_action('wp_after_insert_post', 'esctt_store_page_redirects_after_insert', 10, 4);
     add_action('template_redirect', 'esctt_redirect_legacy_url', 1);
     add_action('init', 'esctt_register_inventoried_redirects', 20);
 }
