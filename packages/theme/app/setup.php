@@ -39,26 +39,12 @@ function page_block_catalog(): array
 function sport_life_helloasso_url(string $url): ?string
 {
     $url = esc_url_raw(trim($url));
-    $scheme = strtolower((string) wp_parse_url($url, PHP_URL_SCHEME));
-    $host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+    $isAllowed = preg_match(
+        '#^https?://(?:[a-z0-9-]+\.)*helloasso\.com(?::[0-9]+)?(?:[/?#]|$)#i',
+        $url,
+    ) === 1;
 
-    if (! in_array($scheme, ['http', 'https'], true)) {
-        return null;
-    }
-
-    if ($host === '') {
-        return null;
-    }
-
-    if ($host === 'helloasso.com') {
-        return $url;
-    }
-
-    if (! str_ends_with($host, '.helloasso.com')) {
-        return null;
-    }
-
-    return $url;
+    return $isAllowed ? $url : null;
 }
 
 function render_sport_life(array $attributes): string
