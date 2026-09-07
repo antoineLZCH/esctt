@@ -4,6 +4,10 @@ function partners_load_wordpress(): void
 {
     putenv('APP_RUNNING_IN_CONSOLE=false');
     require_once dirname(__DIR__, 2) . '/web/wp/wp-load.php';
+
+    if (! defined('DOING_AUTOSAVE')) {
+        define('DOING_AUTOSAVE', false);
+    }
 }
 
 function partners_block(): string
@@ -229,7 +233,8 @@ test('an empty published partner entry does not create an empty public section',
             wp_delete_post($emptyPartner, true);
         }
 
-        expect(do_blocks(partners_block()))->toBe('');
+        expect(do_blocks(partners_block()))->toBe('')
+            ->and(\App\render_partners([]))->toBe('');
 
         foreach ($originalOrders as $partnerId => $menuOrder) {
             wp_update_post([
