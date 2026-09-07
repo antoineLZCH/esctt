@@ -110,7 +110,8 @@ test('admins can edit and inspect location and slot fields', function () {
         expect($locationFields)->toContain('5 rue du Test, Colombes', 'required')
             ->and(esctt_location_is_valid($locationId))->toBeTrue()
             ->and(esctt_location_is_valid(0))->toBeFalse()
-            ->and(esctt_practice_slot_is_valid(0))->toBeFalse();
+            ->and(esctt_practice_slot_is_valid(0))->toBeFalse()
+            ->and(esctt_is_valid_day(''))->toBeFalse();
 
         $_POST['esctt_location_address'] = '';
         esctt_save_location($locationId);
@@ -250,6 +251,15 @@ test('published slots render by day and start time with live location and profil
         add_filter('get_object_terms', $termsError, 99, 4);
         expect(esctt_practice_slot_is_valid($lateSlotId))->toBeFalse();
         remove_filter('get_object_terms', $termsError, 99);
+
+        $profileTermsError = static function ($terms, $objectIds, $taxonomies, $args) {
+            return isset($args['fields']) && $args['fields'] === 'slugs'
+                ? $terms
+                : new WP_Error('profile_terms_failed');
+        };
+        add_filter('get_object_terms', $profileTermsError, 99, 4);
+        expect(esctt_published_practice_slots())->not->toBeEmpty();
+        remove_filter('get_object_terms', $profileTermsError, 99);
 
         wp_delete_object_term_relationships($tuesdaySlotId, 'esctt_player_profile');
         expect(do_blocks('<!-- wp:esctt/practice-schedules /-->'))->not->toContain('Mardi soir');
