@@ -1882,10 +1882,23 @@ function esctt_capture_page_redirects(int $postId, array $postData): void
     $GLOBALS['esctt_page_redirect_snapshot'][$postId] = $snapshot;
 }
 
+function esctt_capture_page_redirects_from_data(
+    array $data,
+    array $postData,
+    array $unsanitizedPostData,
+    bool $update,
+): array {
+    if ($update) {
+        esctt_capture_page_redirects((int) ($postData['ID'] ?? 0), $postData);
+    }
+
+    return $data;
+}
+
 /**
  * Persist every changed path against the page ID, not a stale URL.
  */
-function esctt_store_page_redirects(int $postId, WP_Post $postAfter, WP_Post $postBefore): void
+function esctt_store_page_redirects(int $postId, WP_Post $postAfter): void
 {
     $snapshot = $GLOBALS['esctt_page_redirect_snapshot'][$postId] ?? [];
     unset($GLOBALS['esctt_page_redirect_snapshot'][$postId]);
@@ -1910,13 +1923,12 @@ function esctt_store_page_redirects_after_insert(
     int $postId,
     WP_Post $postAfter,
     bool $update,
-    ?WP_Post $postBefore,
 ): void {
-    if (! $update || ! $postBefore instanceof WP_Post) {
+    if (! $update) {
         return;
     }
 
-    esctt_store_page_redirects($postId, $postAfter, $postBefore);
+    esctt_store_page_redirects($postId, $postAfter);
 }
 
 /**
@@ -2099,8 +2111,8 @@ if (function_exists('add_action')) {
     add_action('init', 'esctt_register_redirect_model', 5);
     add_action('add_meta_boxes_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_register_redirect_meta_box');
     add_action('save_post_' . ESCTT_REDIRECT_POST_TYPE, 'esctt_save_redirect');
-    add_action('pre_post_update', 'esctt_capture_page_redirects', 10, 2);
-    add_action('wp_after_insert_post', 'esctt_store_page_redirects_after_insert', 10, 4);
+    add_filter('wp_insert_post_data', 'esctt_capture_page_redirects_from_data', 10, 4);
+    add_action('wp_insert_post', 'esctt_store_page_redirects_after_insert', 10, 3);
     add_action('template_redirect', 'esctt_redirect_legacy_url', 1);
     add_action('init', 'esctt_register_inventoried_redirects', 20);
 }
