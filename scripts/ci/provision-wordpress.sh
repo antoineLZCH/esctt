@@ -108,9 +108,9 @@ if ((${#privacy_ids[@]} == 0)); then
     privacy_id=$("${wp[@]}" post create \
         --post_type=page \
         --post_status=publish \
-        --post_title='Confidentialité' \
+        --post_title=Privacy \
         --post_name=confidentialite \
-        --post_content='Politique de confidentialité du club.' \
+        --post_content=Privacy \
         --porcelain)
 else
     privacy_id="${privacy_ids[0]}"
