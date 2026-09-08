@@ -1,7 +1,7 @@
 {
   "name": "@esctt/esctt-content",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ES Colombienne Tennis de table content plugin",
   "scripts": {
     "check": "php -l esctt-content.php"
