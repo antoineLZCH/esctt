@@ -22,17 +22,22 @@ test('the HelloAsso block renders a widget and a permanent direct fallback', fun
     $pageContext = new WP_Block_Editor_Context([
         'post' => new WP_Post((object) ['post_type' => 'page']),
     ]);
+    $membershipUrl = 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026';
+    $widgetUrl = $membershipUrl . '/widget';
     $markup = do_blocks(helloasso_block([
-        'helloAssoUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026',
+        'membershipUrl' => $membershipUrl,
+        'widgetUrl' => $widgetUrl,
     ]));
 
     expect(apply_filters('allowed_block_types_all', true, $pageContext))->toContain('esctt/helloasso')
         ->and($markup)->toContain('<section class="esctt-helloasso"')
         ->and($markup)->toContain('<iframe')
         ->and($markup)->toContain('src="https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget"')
+        ->and($markup)->toContain('data-helloasso-widget="true"')
         ->and($markup)->toContain('title="Formulaire d’adhésion HelloAsso"')
         ->and($markup)->toContain('width="100%"')
-        ->and($markup)->toContain('height="900"')
+        ->and($markup)->toContain('height: 750px')
+        ->and($markup)->not->toContain('onload=')
         ->and($markup)->toContain('loading="lazy"')
         ->and($markup)->toContain('class="esctt-helloasso__fallback"')
         ->and(strpos($markup, 'esctt-helloasso__fallback'))->toBeLessThan(strpos($markup, '<iframe'))
@@ -45,15 +50,20 @@ test('the HelloAsso block renders a widget and a permanent direct fallback', fun
     'Requires the CI WordPress installation.',
 );
 
-test('the HelloAsso block accepts only membership URLs and derives the widget URL', function () {
+test('the HelloAsso block validates distinct membership and widget URLs', function () {
     helloasso_load_wordpress();
 
     expect(\App\helloasso_membership_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBe('https://www.helloasso.com/associations/example/adhesions/adhesion-2026')
-        ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBe('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget')
-        ->and(\App\helloasso_widget_url('https://example.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
+        ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget'))->toBe('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget')
+        ->and(\App\helloasso_widget_url('https://example.com/associations/example/adhesions/adhesion-2026/widget'))->toBeNull()
+        ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://example.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://www.helloasso.com/not-a-membership'))->toBeNull()
         ->and(\App\helloasso_membership_url('javascript:alert(1)'))->toBeNull()
+        ->and(\App\helloasso_widget_url('http://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget'))->toBeNull()
+        ->and(\App\helloasso_widget_url('https://user:pass@www.helloasso.com/associations/example/adhesions/adhesion-2026/widget'))->toBeNull()
+        ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget#fragment'))->toBeNull()
+        ->and(\App\helloasso_membership_url('https://user:pass@www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('http://www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('http://'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://[invalid'))->toBeNull()
@@ -62,11 +72,9 @@ test('the HelloAsso block accepts only membership URLs and derives the widget UR
         ->and(\App\helloasso_membership_url('/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('https:///associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('//www.helloasso.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
-        ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026?source=site'))->toBe('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget?source=site')
-        ->and(\App\helloasso_widget_url('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026'))->toBe('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026/widget')
-        ->and(\App\helloasso_widget_url('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026?source=site'))->toBe('https://www.helloasso.com:443/associations/example/adhesions/adhesion-2026/widget?source=site')
         ->and(do_blocks(helloasso_block()))->not->toContain('esctt-helloasso__fallback')
-        ->and(do_blocks(helloasso_block(['helloAssoUrl' => 'https://example.com/adhesion'])))->not->toContain('esctt-helloasso__fallback');
+        ->and(do_blocks(helloasso_block(['membershipUrl' => 'https://example.com/adhesion', 'widgetUrl' => 'https://example.com/widget'])))->not->toContain('esctt-helloasso__fallback')
+        ->and(do_blocks(helloasso_block(['membershipUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026', 'widgetUrl' => 'https://www.helloasso.com/associations/other/adhesions/other/widget'])))->not->toContain('esctt-helloasso__fallback');
 })->skip(
     fn() => getenv('ESCTT_WORDPRESS_TESTS') !== '1',
     'Requires the CI WordPress installation.',
@@ -80,7 +88,8 @@ test('the HelloAsso block renders through the Inscriptions editor content', func
         'post_status' => 'draft',
         'post_title' => 'Inscriptions test HelloAsso',
         'post_content' => '<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /-->' . helloasso_block([
-            'helloAssoUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026',
+            'membershipUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026',
+            'widgetUrl' => 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget',
         ]),
     ]);
     $originalPost = $GLOBALS['post'] ?? null;

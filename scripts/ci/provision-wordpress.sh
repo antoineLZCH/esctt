@@ -119,7 +119,7 @@ else
     "${wp[@]}" post create --post_type=esctt_important "${important_message_args[@]}"
 fi
 
-registration_content='<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /--><!-- wp:esctt/helloasso {"helloAssoUrl":"https://www.helloasso.com/associations/example/adhesions/esctt-test-adhesion"} /-->'
+registration_content='<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /--><!-- wp:esctt/helloasso {"membershipUrl":"https://www.helloasso.com/associations/example/adhesions/esctt-test-adhesion","widgetUrl":"https://www.helloasso.com/associations/example/adhesions/esctt-test-adhesion/widget"} /-->'
 registration_ids=( $("${wp[@]}" post list --post_type=page --name=inscriptions --field=ID --format=ids) )
 if ((${#registration_ids[@]} == 0)); then
     "${wp[@]}" post create \

@@ -118,8 +118,9 @@ summary:focus-visible,
 .esctt-helloasso__widget iframe {
   border: 0;
   display: block;
-  height: min(56rem, 100vh);
+  height: 750px;
   max-width: 100%;
+  min-height: 0;
   width: 100%;
 }
 
@@ -139,7 +140,7 @@ summary:focus-visible,
   }
 
   .esctt-helloasso__widget iframe {
-    min-height: 32rem;
+    min-height: 0;
   }
 }
 

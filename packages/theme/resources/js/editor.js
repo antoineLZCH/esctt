@@ -136,7 +136,11 @@ domReady(() => {
     icon: 'money-alt',
     category: 'design',
     attributes: {
-      helloAssoUrl: {
+      membershipUrl: {
+        type: 'string',
+        default: '',
+      },
+      widgetUrl: {
         type: 'string',
         default: '',
       },
@@ -157,9 +161,16 @@ domReady(() => {
           { title: __('HelloAsso membership', 'esctt') },
           createElement(TextControl, {
             label: __('HelloAsso membership URL', 'esctt'),
-            help: __('Paste the public HelloAsso membership URL. The widget URL is derived automatically.', 'esctt'),
-            value: attributes.helloAssoUrl,
-            onChange: (helloAssoUrl) => setAttributes({ helloAssoUrl }),
+            help: __('Public campaign URL used by the permanent fallback link.', 'esctt'),
+            value: attributes.membershipUrl,
+            onChange: (membershipUrl) => setAttributes({ membershipUrl }),
+            type: 'url',
+          }),
+          createElement(TextControl, {
+            label: __('HelloAsso widget URL', 'esctt'),
+            help: __('Paste the exact iframe src URL supplied by HelloAsso.', 'esctt'),
+            value: attributes.widgetUrl,
+            onChange: (widgetUrl) => setAttributes({ widgetUrl }),
             type: 'url',
           }),
         ),

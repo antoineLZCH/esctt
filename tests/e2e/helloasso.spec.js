@@ -24,6 +24,17 @@ async function expectRegistrationWidget(page) {
     await expect(iframe).toHaveAttribute('src', widgetUrl);
     await expect(iframe).toHaveAttribute('title', 'Formulaire d’adhésion HelloAsso');
     await expect(iframe).toHaveAttribute('loading', 'lazy');
+    await expect(iframe).toHaveAttribute('data-helloasso-widget', 'true');
+
+    await page.evaluate(() => {
+        const iframe = document.querySelector('iframe[data-helloasso-widget]');
+        window.dispatchEvent(new MessageEvent('message', {
+            data: { height: 1200 },
+            origin: 'https://www.helloasso.com',
+            source: iframe.contentWindow,
+        }));
+    });
+    await expect(iframe).toHaveCSS('height', '1200px');
 
     const dimensions = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,

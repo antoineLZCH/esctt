@@ -70,7 +70,10 @@ function helloasso_membership_url(string $url): ?string
     $host = strtolower((string) ($parts['host'] ?? ''));
     $path = (string) ($parts['path'] ?? '');
 
-    if ($scheme !== 'https') {
+    if ($scheme !== 'https'
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['fragment'])) {
         return null;
     }
 
@@ -87,36 +90,50 @@ function helloasso_membership_url(string $url): ?string
 
 function helloasso_widget_url(string $url): ?string
 {
-    $membershipUrl = helloasso_membership_url($url);
+    $url = esc_url_raw(\trim($url));
+    $parts = wp_parse_url($url);
 
-    if ($membershipUrl === null) {
+    if (! is_array($parts)) {
         return null;
     }
 
-    $parts = wp_parse_url($membershipUrl);
-    $origin = sprintf(
-        '%s://%s%s',
-        strtolower((string) $parts['scheme']),
-        strtolower((string) $parts['host']),
-        isset($parts['port']) ? ':' . (int) $parts['port'] : '',
-    );
-    $path = '/' . \trim((string) $parts['path'], '/') . '/widget';
-    $query = isset($parts['query']) ? '?' . (string) $parts['query'] : '';
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    $host = strtolower((string) ($parts['host'] ?? ''));
+    $path = (string) ($parts['path'] ?? '');
 
-    return esc_url_raw($origin . $path . $query);
+    if ($scheme !== 'https'
+        || ! \in_array($host, ['helloasso.com', 'www.helloasso.com'], true)
+        || isset($parts['user'])
+        || isset($parts['pass'])
+        || isset($parts['fragment'])
+        || ! \preg_match('~^/associations/[a-z0-9][a-z0-9-]*/adhesions/[a-z0-9][a-z0-9-]*/widget/?$~i', $path)) {
+        return null;
+    }
+
+    return $url;
 }
 
 function render_helloasso(array $attributes): string
 {
-    $helloAssoUrl = helloasso_membership_url((string) ($attributes['helloAssoUrl'] ?? ''));
+    $membershipUrl = helloasso_membership_url((string) ($attributes['membershipUrl'] ?? ''));
+    $widgetUrl = helloasso_widget_url((string) ($attributes['widgetUrl'] ?? ''));
 
-    if ($helloAssoUrl === null) {
+    if ($membershipUrl === null || $widgetUrl === null) {
+        return '';
+    }
+
+    $membershipParts = wp_parse_url($membershipUrl);
+    $widgetParts = wp_parse_url($widgetUrl);
+    $membershipPath = is_array($membershipParts) ? \rtrim((string) ($membershipParts['path'] ?? ''), '/') : '';
+    $widgetPath = is_array($widgetParts) ? \rtrim((string) ($widgetParts['path'] ?? ''), '/') : '';
+
+    if ($membershipPath === '' || $widgetPath !== $membershipPath . '/widget') {
         return '';
     }
 
     return view('sections.helloasso', [
-        'helloAssoUrl' => $helloAssoUrl,
-        'widgetUrl' => helloasso_widget_url($helloAssoUrl),
+        'membershipUrl' => $membershipUrl,
+        'widgetUrl' => $widgetUrl,
     ])->render();
 }
 
@@ -479,7 +496,11 @@ add_action('init', function (): void {
     register_block_type('esctt/helloasso', [
         'api_version' => '3',
         'attributes' => [
-            'helloAssoUrl' => [
+            'membershipUrl' => [
+                'type' => 'string',
+                'default' => '',
+            ],
+            'widgetUrl' => [
                 'type' => 'string',
                 'default' => '',
             ],
