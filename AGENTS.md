@@ -26,3 +26,9 @@ For spec #16 and tickets #17–#37, claim only unblocked frontier work and coord
 - Coding: apply `ponytail`; keep the smallest safe change and verify according to risk.
 - CLI first: when a supported CLI can scaffold a project or install dependencies, use it instead of hand-writing or copying boilerplate; reserve manual edits for project-specific integration.
 - Orchestration: use `sol-orchestrator` only for complex, independently parallelizable work.
+
+### Pull requests
+
+- For every pull request created or updated by an agent that contains code changes, invoke the `pr-lens` skill.
+- Create, validate, render, and attach a diagram of the code changes to the PR, following `.agents/skills/pr-lens/SKILL.md`; put it in the PR description when possible.
+- Pull requests limited to documentation, skill additions, or configuration changes do not require `pr-lens`.
