@@ -129,6 +129,62 @@ domReady(() => {
     save: () => null,
   });
 
+  blocks.registerBlockType('esctt/helloasso', {
+    apiVersion: 3,
+    title: __('HelloAsso membership', 'esctt'),
+    description: __('Embeds the HelloAsso membership form with a direct fallback link.', 'esctt'),
+    icon: 'money-alt',
+    category: 'design',
+    attributes: {
+      membershipUrl: {
+        type: 'string',
+        default: '',
+      },
+      widgetUrl: {
+        type: 'string',
+        default: '',
+      },
+    },
+    supports: {
+      html: false,
+      multiple: false,
+      reusable: false,
+    },
+    edit: ({ attributes, setAttributes }) => createElement(
+      Fragment,
+      null,
+      createElement(
+        InspectorControls,
+        null,
+        createElement(
+          PanelBody,
+          { title: __('HelloAsso membership', 'esctt') },
+          createElement(TextControl, {
+            label: __('HelloAsso membership URL', 'esctt'),
+            help: __('Public campaign URL used by the permanent fallback link.', 'esctt'),
+            value: attributes.membershipUrl,
+            onChange: (membershipUrl) => setAttributes({ membershipUrl }),
+            type: 'url',
+          }),
+          createElement(TextControl, {
+            label: __('HelloAsso widget URL', 'esctt'),
+            help: __('Paste the exact iframe src URL supplied by HelloAsso.', 'esctt'),
+            value: attributes.widgetUrl,
+            onChange: (widgetUrl) => setAttributes({ widgetUrl }),
+            type: 'url',
+          }),
+        ),
+      ),
+      createElement(
+        'section',
+        useBlockProps({ className: 'esctt-helloasso esctt-helloasso--editor' }),
+        createElement('h2', null, __('HelloAsso membership form', 'esctt')),
+        createElement('p', null, __('The published page includes the widget and a permanent direct link.', 'esctt')),
+      ),
+    ),
+    save: () => null,
+  });
+
   blocks.registerBlockType('esctt/practice-schedules', {
     apiVersion: 3,
     title: __('Horaires de pratique', 'esctt'),

@@ -101,6 +101,8 @@ else
 fi
 
 "${wp[@]}" option update show_on_front page
+"${wp[@]}" option update permalink_structure '/%postname%/'
+"${wp[@]}" rewrite flush
 "${wp[@]}" option update page_on_front "$home_id"
 
 important_message_id="$("${wp[@]}" post list --post_type=esctt_important --name=ci-important-message --format=ids)"
@@ -115,4 +117,21 @@ if [[ -n "$important_message_id" ]]; then
     "${wp[@]}" post update "$important_message_id" "${important_message_args[@]}"
 else
     "${wp[@]}" post create --post_type=esctt_important "${important_message_args[@]}"
+fi
+
+registration_content='<!-- wp:esctt/hero {"title":"Inscriptions","lock":{"move":true,"remove":true}} /--><!-- wp:esctt/helloasso {"membershipUrl":"https://www.helloasso.com/associations/example/adhesions/esctt-test-adhesion","widgetUrl":"https://www.helloasso.com/associations/example/adhesions/esctt-test-adhesion/widget"} /-->'
+registration_ids=( $("${wp[@]}" post list --post_type=page --name=inscriptions --field=ID --format=ids) )
+if ((${#registration_ids[@]} == 0)); then
+    "${wp[@]}" post create \
+        --post_type=page \
+        --post_status=publish \
+        --post_title='Inscriptions' \
+        --post_name=inscriptions \
+        --post_content="$registration_content" \
+        --porcelain
+else
+    "${wp[@]}" post update "${registration_ids[0]}" \
+        --post_status=publish \
+        --post_title='Inscriptions' \
+        --post_content="$registration_content"
 fi

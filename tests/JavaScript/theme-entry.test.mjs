@@ -18,7 +18,9 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     }
 
     const registeredBlocks = new Map();
+    const windowListeners = new Map();
     globalThis.window = {
+        addEventListener: (type, handler) => windowListeners.set(type, handler),
         wp: {
             blocks: {
                 registerBlockType: (name, settings) => registeredBlocks.set(name, settings),
@@ -41,11 +43,29 @@ test('theme JavaScript entries parse and the application entry loads', async () 
             i18n: { __: (text) => text },
         },
     };
-    globalThis.document = { readyState: 'complete' };
+    const helloAssoIframe = {
+        contentWindow: {},
+        style: {},
+    };
+    globalThis.document = {
+        readyState: 'complete',
+        querySelectorAll: () => [helloAssoIframe],
+    };
 
     for (const entry of entries.filter((file) => file.endsWith('.js'))) {
         await import(pathToFileURL(join(root, 'packages/theme/resources/js', entry)).href);
     }
+
+    assert.equal(typeof windowListeners.get('message'), 'function');
+    const handleHelloAssoMessage = windowListeners.get('message');
+    handleHelloAssoMessage({ origin: 'https://evil.example', source: helloAssoIframe.contentWindow, data: { height: 1200 } });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: null, data: { height: 1200 } });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: {}, data: { height: 1200 } });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: helloAssoIframe.contentWindow, data: null });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: helloAssoIframe.contentWindow, data: { height: 0 } });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: helloAssoIframe.contentWindow, data: { height: 3001 } });
+    handleHelloAssoMessage({ origin: 'https://www.helloasso.com', source: helloAssoIframe.contentWindow, data: { height: 1200 } });
+    assert.equal(helloAssoIframe.style.height, '1200px');
 
     const hero = registeredBlocks.get('esctt/hero');
     assert.ok(hero);
@@ -92,6 +112,27 @@ test('theme JavaScript entries parse and the application entry loads', async () 
     assert.equal(sportEditor.children[1].props.className, 'esctt-sport-life esctt-sport-life--editor');
     assert.equal(sportUrlControl.props.type, 'url');
     assert.deepEqual(sportChanges, [{ helloAssoUrl: 'https://www.helloasso.com/associations/example/adhesions/tournoi' }]);
+
+    const helloAsso = registeredBlocks.get('esctt/helloasso');
+    assert.ok(helloAsso);
+    assert.equal(helloAsso.save(), null);
+    const helloAssoChanges = [];
+    const helloAssoEditor = helloAsso.edit({
+        attributes: { membershipUrl: '', widgetUrl: '' },
+        setAttributes: (value) => helloAssoChanges.push(value),
+    });
+    const helloAssoMembershipControl = helloAssoEditor.children[0].children[0].children[0];
+    const helloAssoWidgetControl = helloAssoEditor.children[0].children[0].children[1];
+    helloAssoMembershipControl.props.onChange('https://www.helloasso.com/associations/example/adhesions/adhesion-2026');
+    helloAssoWidgetControl.props.onChange('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget');
+
+    assert.equal(helloAssoEditor.children[1].props.className, 'esctt-helloasso esctt-helloasso--editor');
+    assert.equal(helloAssoMembershipControl.props.type, 'url');
+    assert.equal(helloAssoWidgetControl.props.type, 'url');
+    assert.deepEqual(helloAssoChanges, [
+        { membershipUrl: 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026' },
+        { widgetUrl: 'https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget' },
+    ]);
 
     delete globalThis.document;
     delete globalThis.window;

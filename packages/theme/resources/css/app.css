@@ -93,6 +93,57 @@ summary:focus-visible,
   max-width: 48rem;
   padding: 0 1.5rem 3rem;
 }
+
+.esctt-helloasso {
+  margin-inline: auto;
+  max-width: 48rem;
+  padding: 3rem 1.5rem;
+}
+
+.esctt-helloasso__policy {
+  font-weight: 600;
+}
+
+.esctt-helloasso__fallback {
+  overflow-wrap: anywhere;
+}
+
+.esctt-helloasso__widget {
+  border: 1px solid var(--esctt-border);
+  margin-top: 1.5rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.esctt-helloasso__widget iframe {
+  border: 0;
+  display: block;
+  height: 750px;
+  max-width: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.esctt-helloasso .screen-reader-text {
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 48rem) {
+  .esctt-helloasso {
+    padding-inline: 1rem;
+  }
+
+  .esctt-helloasso__widget iframe {
+    min-height: 0;
+  }
+}
+
 .esctt-partners {
   padding: 3rem 1.5rem;
 }

@@ -18,6 +18,27 @@
   padding-block: 3rem;
 }
 
+.esctt-helloasso {
+  margin-inline: auto;
+  max-width: 48rem;
+  padding: 3rem 1.5rem;
+}
+
+.esctt-helloasso__widget {
+  border: 1px solid currentColor;
+  margin-top: 1.5rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.esctt-helloasso__widget iframe {
+  border: 0;
+  display: block;
+  height: min(56rem, 100vh);
+  max-width: 100%;
+  width: 100%;
+}
+
 .esctt-sport-life__intro,
 .esctt-sport-life__photos {
   display: grid;
