@@ -124,8 +124,8 @@ function render_helloasso(array $attributes): string
 
     $membershipParts = wp_parse_url($membershipUrl);
     $widgetParts = wp_parse_url($widgetUrl);
-    $membershipPath = is_array($membershipParts) ? \rtrim((string) ($membershipParts['path'] ?? ''), '/') : '';
-    $widgetPath = is_array($widgetParts) ? \rtrim((string) ($widgetParts['path'] ?? ''), '/') : '';
+    $membershipPath = \rtrim((string) $membershipParts['path'], '/');
+    $widgetPath = \rtrim((string) $widgetParts['path'], '/');
 
     if ($membershipPath === '' || $widgetPath !== $membershipPath . '/widget') {
         return '';
