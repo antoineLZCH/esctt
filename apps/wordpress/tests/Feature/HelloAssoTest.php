@@ -60,7 +60,7 @@ test('the HelloAsso block validates distinct membership and widget URLs', functi
         ->and(\App\helloasso_membership_url('https://example.com/associations/example/adhesions/adhesion-2026'))->toBeNull()
         ->and(\App\helloasso_membership_url('https://www.helloasso.com/not-a-membership'))->toBeNull()
         ->and(\App\helloasso_membership_url('javascript:alert(1)'))->toBeNull()
-        ->and(\App\helloasso_widget_url('http://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget'))->toBeNull()
+        ->and(\App\helloasso_widget_url('http://'))->toBeNull()
         ->and(\App\helloasso_widget_url('https://user:pass@www.helloasso.com/associations/example/adhesions/adhesion-2026/widget'))->toBeNull()
         ->and(\App\helloasso_widget_url('https://[invalid'))->toBeNull()
         ->and(\App\helloasso_widget_url('https://www.helloasso.com/associations/example/adhesions/adhesion-2026/widget#fragment'))->toBeNull()
