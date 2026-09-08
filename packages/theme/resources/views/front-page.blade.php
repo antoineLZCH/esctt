@@ -40,6 +40,7 @@
     <p class="eyebrow">Pratiquer</p>
     <h2 id="schedules-title">Horaires et lieux</h2>
     <p>Retrouvez tous les créneaux de la semaine, leur lieu et les profils auxquels ils s’adressent.</p>
+    {!! do_blocks('<!-- wp:esctt/practice-schedules /-->') !!}
   </section>
 
   <section id="tarifs" class="home-section site-shell skip-target" tabindex="-1" aria-labelledby="pricing-title">

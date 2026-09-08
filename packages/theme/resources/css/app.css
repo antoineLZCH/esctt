@@ -398,33 +398,186 @@ p {
 }
 
 .esctt-practice-schedules {
+  min-width: 0;
   padding: 1.5rem;
 }
 
-.esctt-practice-day + .esctt-practice-day {
+.esctt-practice-profile-filter {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--esctt-border);
+}
+
+.esctt-practice-profile-filter legend {
+  padding-inline: 0.25rem;
+  font-weight: 700;
+}
+
+.esctt-practice-profile-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.esctt-practice-profile-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--esctt-border);
+  cursor: pointer;
+}
+
+.esctt-practice-profile-help {
+  margin: 1rem 0 0;
+  color: var(--esctt-muted);
+}
+
+.esctt-practice-grid {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
   margin-top: 1.5rem;
 }
 
-.esctt-practice-slot {
-  display: grid;
-  gap: 0.25rem 0.75rem;
-  grid-template-columns: auto 1fr;
-  margin-block: 0.75rem;
+.esctt-practice-time-axis {
+  display: none;
 }
 
-.esctt-practice-slot > time {
-  grid-column: 1;
+.esctt-practice-day {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--esctt-border);
+}
+
+.esctt-practice-day h3 {
+  margin: 0 0 0.75rem;
+}
+
+.esctt-practice-day ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.esctt-practice-slot {
+  min-width: 0;
+  margin: 0.75rem 0 0;
+  padding: 0.65rem;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--esctt-border);
+  border-inline-start: 0.35rem solid var(--esctt-border);
+  background: white;
+}
+
+.esctt-practice-slot.is-match {
+  border-color: var(--esctt-accent);
+  border-inline-start-color: var(--esctt-accent);
+  background: #e0f2fe;
+}
+
+.esctt-practice-slot__time {
+  display: block;
+  font-weight: 700;
 }
 
 .esctt-practice-slot > strong,
 .esctt-practice-slot > .esctt-practice-profiles,
+.esctt-practice-slot > .esctt-practice-slot__status,
 .esctt-practice-slot > .esctt-practice-location {
-  grid-column: 2;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.esctt-practice-slot__status {
+  color: var(--esctt-accent-dark);
+  font-weight: 700;
+}
+
+.esctt-practice-slot__status[hidden] {
+  display: none;
 }
 
 .esctt-practice-profiles,
-.esctt-practice-location {
+.esctt-practice-location,
+.esctt-practice-day-empty {
   font-size: 0.95em;
+}
+
+.esctt-practice-day-empty {
+  color: var(--esctt-muted);
+}
+
+@media (min-width: 49rem) {
+  .esctt-practice-grid {
+    grid-template-columns: minmax(4rem, 4rem) repeat(7, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .esctt-practice-time-axis {
+    display: grid;
+    grid-template-rows: 3rem repeat(96, 1.5rem);
+    min-width: 0;
+    padding-top: 0.75rem;
+    color: var(--esctt-muted);
+    font-size: 0.8rem;
+    text-align: end;
+  }
+
+  .esctt-practice-time-axis strong {
+    box-sizing: border-box;
+    height: 3rem;
+    padding: 0.75rem 0.5rem 0.75rem 0;
+    color: var(--esctt-ink);
+  }
+
+  .esctt-practice-time-axis time {
+    grid-row: span 4;
+    padding: 0.2rem 0.5rem 0 0;
+    border-top: 1px solid var(--esctt-border);
+  }
+
+  .esctt-practice-day {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .esctt-practice-day h3 {
+    box-sizing: border-box;
+    flex: 0 0 3rem;
+    margin: 0 0 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  .esctt-practice-day ul {
+    display: grid;
+    grid-template-columns: repeat(var(--esctt-practice-lanes, 1), minmax(0, 1fr));
+    grid-template-rows: repeat(96, 1.5rem);
+    min-height: 144rem;
+  }
+
+  .esctt-practice-slot {
+    min-height: 0;
+    margin: 0;
+    overflow: auto;
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+
+  .esctt-practice-day-empty {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 0.5rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .esctt-practice-slot {
+    grid-row: auto !important;
+  }
 }
 
 .esctt-pricing {

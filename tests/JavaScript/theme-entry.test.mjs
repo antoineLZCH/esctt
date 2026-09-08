@@ -41,11 +41,94 @@ test('theme JavaScript entries parse and the application entry loads', async () 
             i18n: { __: (text) => text },
         },
     };
-    globalThis.document = { readyState: 'complete' };
+    let domReadyCallback;
+    globalThis.document = {
+        readyState: 'complete',
+        addEventListener: (event, callback) => {
+            if (event === 'DOMContentLoaded') {
+                domReadyCallback = callback;
+            }
+        },
+        querySelectorAll: () => [],
+    };
 
+    let appModule;
     for (const entry of entries.filter((file) => file.endsWith('.js'))) {
-        await import(pathToFileURL(join(root, 'packages/theme/resources/js', entry)).href);
+        const module = await import(pathToFileURL(join(root, 'packages/theme/resources/js', entry)).href);
+        if (entry === 'app.js') {
+            appModule = module;
+        }
     }
+
+    assert.equal(typeof appModule.initializePracticeScheduleComparison, 'function');
+    domReadyCallback();
+
+    const listeners = {};
+    const profileSlugs = ['jeune', 'adulte-loisir', 'adulte-competition'];
+    const makeSlot = (profiles) => {
+        const statuses = profileSlugs.map((slug) => ({
+            dataset: { profileStatus: slug, profileMatch: String(profiles.includes(slug)) },
+            hidden: slug !== 'jeune',
+        }));
+
+        return {
+            dataset: { profileSlugs: profiles.join(' ') },
+            classList: {
+                toggled: {},
+                toggle(className, enabled) { this.toggled[className] = enabled; },
+            },
+            querySelectorAll: () => statuses,
+            statuses,
+        };
+    };
+    const slots = [makeSlot(['jeune']), makeSlot(['adulte-loisir'])];
+    const profileLabels = {
+        jeune: 'Jeune',
+        'adulte-loisir': 'Adulte loisir',
+        'adulte-competition': 'Adulte compétition',
+    };
+    const inputs = profileSlugs.map((slug) => ({
+        value: slug,
+        dataset: { profileLabel: profileLabels[slug] },
+        checked: slug === 'jeune',
+        addEventListener: (event, callback) => { listeners[slug] = callback; },
+    }));
+    const selectedMessage = { textContent: '' };
+    const schedule = {
+        querySelectorAll: (selector) => selector.includes('input') ? inputs : slots,
+        querySelector: () => inputs.find((input) => input.checked),
+        selectedMessage,
+    };
+    schedule.querySelector = (selector) => selector.includes(':checked')
+        ? inputs.find((input) => input.checked)
+        : selectedMessage;
+
+    appModule.initializePracticeScheduleComparison({ querySelectorAll: () => [schedule] });
+    assert.equal(slots[0].dataset.profileMatch, 'true');
+    assert.equal(slots[1].dataset.profileMatch, 'false');
+    assert.equal(slots[0].statuses[0].hidden, false);
+    assert.equal(slots[1].statuses[1].hidden, true);
+    assert.match(selectedMessage.textContent, /Jeune sélectionné : 1 créneaux adaptés/);
+
+    inputs.forEach((input) => { input.checked = input.value === 'adulte-loisir'; });
+    listeners['adulte-loisir']();
+    assert.equal(slots[0].dataset.profileMatch, 'false');
+    assert.equal(slots[1].dataset.profileMatch, 'true');
+    assert.equal(slots[0].statuses[1].hidden, false);
+    assert.equal(slots[1].statuses[1].hidden, false);
+    assert.match(selectedMessage.textContent, /Adulte loisir sélectionné : 1 créneaux adaptés/);
+
+    const emptySchedule = {
+        querySelectorAll: () => [],
+        querySelector: () => null,
+    };
+    const scheduleWithoutStatus = {
+        querySelectorAll: (selector) => selector.includes('input') ? inputs : [],
+        querySelector: (selector) => selector.includes(':checked') ? inputs[0] : null,
+    };
+    appModule.initializePracticeScheduleComparison({
+        querySelectorAll: () => [emptySchedule, scheduleWithoutStatus],
+    });
 
     const hero = registeredBlocks.get('esctt/hero');
     assert.ok(hero);
