@@ -1,7 +1,8 @@
 # Recherche — articulation avec la future application du club
 
-_Date de consultation des sources : 6 septembre 2026 (UTC)._  
-_Question traitée : [ticket #13](https://github.com/antoineLZCH/esctt/issues/13)._ 
+_Date de consultation des sources : 6 septembre 2026 (UTC)._
+
+_Question traitée : [ticket #13](https://github.com/antoineLZCH/esctt/issues/13)._
 
 ## Périmètre et méthode
 
